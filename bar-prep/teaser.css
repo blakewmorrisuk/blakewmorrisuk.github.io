@@ -641,63 +641,32 @@
     font-style: italic;
 }
 
-/* === Celebration overlays (confetti + hype banner) ============ */
+/* === Confetti (DOM particles) ================================= */
 
-/* fx-canvas and hype-banner live outside .phone-screen (as siblings) so they
-   don't interfere with phone-content's flex/scroll on iOS Safari. They're
-   absolutely positioned inside .phone, which has 10px padding around the
-   phone-screen, a 44px status bar at the top, and a 64px tab bar at the bottom. */
-
-.fx-canvas {
+.confetti {
     position: absolute;
-    top: 54px;
-    left: 10px;
-    right: 10px;
-    bottom: 74px;
-    width: auto;
-    height: auto;
     pointer-events: none;
-    z-index: 25;
+    z-index: 60;
+    transform: translate(-50%, -50%);
+    animation-name: confetti-pop;
+    animation-fill-mode: forwards;
+    animation-timing-function: cubic-bezier(0.32, 0.5, 0.6, 0.95);
+    will-change: transform, opacity;
 }
 
-.hype-banner {
-    position: absolute;
-    top: 54px;
-    bottom: 74px;
-    left: 10px;
-    right: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 30;
-    padding: 0 18px;
-}
-
-.hype-banner-text {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
-    font-size: clamp(30px, 8.5vw, 44px);
-    font-weight: 900;
-    letter-spacing: -0.015em;
-    line-height: 1;
-    text-align: center;
-    white-space: nowrap;
-    padding: 4px 12px;
-
-    background: linear-gradient(135deg, #ffa84e 0%, #fb6f8a 45%, #b465d8 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 8px 22px rgba(232, 166, 74, 0.35));
-
-    opacity: 0;
-    transform: scale(0.5) rotate(-2deg);
-    transition: opacity 0.25s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.hype-banner.show .hype-banner-text {
-    opacity: 1;
-    transform: scale(1) rotate(-2deg);
+@keyframes confetti-pop {
+    0%   {
+        transform: translate(-50%, -50%) rotate(0deg);
+        opacity: 1;
+    }
+    40%  {
+        transform: translate(calc(-50% + var(--dx-mid)), calc(-50% + var(--dy-mid))) rotate(calc(var(--rot) * 0.4));
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--dx-end)), calc(-50% + var(--dy-end))) rotate(var(--rot));
+        opacity: 0;
+    }
 }
 
 /* === Caption beneath phone ==================================== */
