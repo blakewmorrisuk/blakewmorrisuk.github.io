@@ -66,6 +66,13 @@ h1.name .name-left  { text-align: right; }
 h1.name .name-pivot { text-align: center; }
 h1.name .name-right { text-align: left; }
 
+h1.name .name-period {
+    font-size: 0.6em;
+    opacity: 0.55;
+    margin-left: -0.04em;
+    vertical-align: 0.05em;
+}
+
 .subtitle {
     font-family: var(--serif);
     font-style: italic;
