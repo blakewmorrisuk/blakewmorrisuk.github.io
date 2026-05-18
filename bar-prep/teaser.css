@@ -643,12 +643,17 @@
 
 /* === Celebration overlays (confetti + hype banner) ============ */
 
+/* fx-canvas and hype-banner live outside .phone-screen (as siblings) so they
+   don't interfere with phone-content's flex/scroll on iOS Safari. They're
+   absolutely positioned inside .phone, which has 10px padding around the
+   phone-screen, a 44px status bar at the top, and a 64px tab bar at the bottom. */
+
 .fx-canvas {
     position: absolute;
-    top: 44px;
-    left: 0;
-    right: 0;
-    bottom: 64px;
+    top: 54px;
+    left: 10px;
+    right: 10px;
+    bottom: 74px;
     width: auto;
     height: auto;
     pointer-events: none;
@@ -657,10 +662,10 @@
 
 .hype-banner {
     position: absolute;
-    top: 44px;
-    bottom: 64px;
-    left: 0;
-    right: 0;
+    top: 54px;
+    bottom: 74px;
+    left: 10px;
+    right: 10px;
     display: flex;
     align-items: center;
     justify-content: center;

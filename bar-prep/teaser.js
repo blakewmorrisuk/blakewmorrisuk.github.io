@@ -386,9 +386,13 @@
         hypeText = hypeBanner ? hypeBanner.querySelector(".hype-banner-text") : null;
         if (!fxCanvas) return;
         fxCtx = fxCanvas.getContext("2d");
-        resizeFx();
         window.addEventListener("resize", resizeFx);
-        requestAnimationFrame(tickFx);
+        // Defer first sizing to after the layout has settled — otherwise the
+        // canvas can come up 0x0 on first paint and silently swallow particles.
+        requestAnimationFrame(() => {
+            resizeFx();
+            requestAnimationFrame(tickFx);
+        });
     }
 
     function resizeFx() {
@@ -426,6 +430,13 @@
     function tickFx() {
         if (fxCanvas && fxCtx) {
             const rect = fxCanvas.getBoundingClientRect();
+            // Safety net: if the canvas buffer no longer matches the CSS size
+            // (initial 0x0, orientation change, etc.), reconcile and keep going.
+            const dpr = window.devicePixelRatio || 1;
+            const targetW = Math.max(1, Math.floor(rect.width * dpr));
+            if (rect.width > 0 && fxCanvas.width !== targetW) {
+                resizeFx();
+            }
             fxCtx.clearRect(0, 0, rect.width, rect.height);
             const next = [];
             for (const p of particles) {

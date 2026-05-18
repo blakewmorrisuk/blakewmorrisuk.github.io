@@ -117,7 +117,10 @@ h1.name {
     font-style: italic;
 }
 
-/* === Dino game (easter egg) =================================== */
+/* === Dino game (easter egg) ===================================
+   The dino-game and m-mark live OUTSIDE the .page container so they can
+   stretch to the full viewport width. The page header + project cards stay
+   inside .page (capped at 960px). */
 
 .dino-game {
     margin-top: 64px;
@@ -126,16 +129,14 @@ h1.name {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
 }
 
 #dino-canvas {
     display: block;
     width: 100%;
-    max-width: 600px;
     aspect-ratio: 4 / 1;
     background: var(--paper);
-    border: 1px solid var(--rule);
-    border-radius: 4px;
     outline: none;
     cursor: pointer;
     touch-action: manipulation;
@@ -144,8 +145,7 @@ h1.name {
 }
 
 #dino-canvas:focus-visible {
-    border-color: var(--amber-soft);
-    box-shadow: 0 0 0 2px var(--amber-soft);
+    box-shadow: inset 0 0 0 2px var(--amber-soft);
 }
 
 .dino-hint {
@@ -159,10 +159,11 @@ h1.name {
 
 .m-mark {
     margin-top: 96px;
+    padding-bottom: 56px;
     text-align: center;
     font-family: var(--serif);
     font-weight: 700;
-    font-size: 22px;
+    font-size: 24px;
     color: var(--ink);
     letter-spacing: 0.02em;
     line-height: 1;
