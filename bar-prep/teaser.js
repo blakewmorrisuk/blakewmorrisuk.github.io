@@ -106,6 +106,12 @@
         },
     ];
 
+    const PHASE_DURATIONS = {
+        focus: 25 * 60,
+        short: 5 * 60,
+        long:  15 * 60,
+    };
+
     const state = {
         screen: "splash",
         tab: "plan",
@@ -113,6 +119,12 @@
         cardFlipped: false,
         tasks: cloneTasks(),
         quoteIdx: Math.floor(Math.random() * QUOTES.length),
+        pomodoro: {
+            phase: "focus",
+            secondsRemaining: PHASE_DURATIONS.focus,
+            isRunning: false,
+            cycle: 1,
+        },
     };
 
     function cloneTasks() {
@@ -172,6 +184,7 @@
             if      (state.tab === "plan")  content.appendChild(renderPlan());
             else if (state.tab === "today") content.appendChild(renderToday());
             else if (state.tab === "cards") content.appendChild(renderCards());
+            else if (state.tab === "pomo")  content.appendChild(renderPomodoro());
             updateTabBar();
         }
     }
@@ -336,6 +349,105 @@
         ]);
     }
 
+    // ---- Pomodoro --------------------------------------------
+
+    function phaseLabel(phase) {
+        if (phase === "focus") return "FOCUS";
+        if (phase === "short") return "SHORT BREAK";
+        return "LONG BREAK";
+    }
+
+    function formatTime(totalSecs) {
+        const safe = Math.max(0, Math.floor(totalSecs));
+        const m = Math.floor(safe / 60);
+        const s = safe % 60;
+        return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+
+    function renderPomodoro() {
+        const p = state.pomodoro;
+        const total = PHASE_DURATIONS[p.phase];
+        const progress = Math.min(1, Math.max(0, 1 - p.secondsRemaining / total));
+        const radius = 80;
+        const C = 2 * Math.PI * radius;
+        const offset = C * (1 - progress);
+
+        const wrap = el("div", { class: "pomo-screen" });
+        wrap.appendChild(el("div", {
+            class: "pomo-phase pomo-phase-" + p.phase,
+        }, phaseLabel(p.phase)));
+
+        const ringWrap = el("div", { class: "pomo-ring-wrap" + (p.isRunning ? " is-running" : "") });
+        ringWrap.innerHTML =
+            '<svg class="pomo-ring" viewBox="0 0 200 200" aria-hidden="true">' +
+                '<circle class="pomo-ring-bg" cx="100" cy="100" r="' + radius + '"/>' +
+                '<circle class="pomo-ring-fg pomo-ring-' + p.phase + '" cx="100" cy="100" r="' + radius + '" ' +
+                'stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '"/>' +
+            '</svg>';
+        ringWrap.appendChild(el("div", { class: "pomo-time" }, formatTime(p.secondsRemaining)));
+        wrap.appendChild(ringWrap);
+
+        wrap.appendChild(el("div", { class: "pomo-meta" },
+            "ROUND " + p.cycle + "  ·  " + (4 - ((p.cycle - 1) % 4)) + " UNTIL LONG BREAK"
+        ));
+
+        wrap.appendChild(el("div", { class: "pomo-btn-row" }, [
+            el("button", {
+                class: "pomo-btn pomo-btn-primary pomo-btn-" + p.phase + (p.isRunning ? " is-running" : ""),
+                "data-action": "pomo-toggle",
+                type: "button",
+            }, p.isRunning ? "PAUSE" : (p.secondsRemaining < PHASE_DURATIONS[p.phase] ? "RESUME" : "START")),
+            el("button", {
+                class: "pomo-btn pomo-btn-secondary",
+                "data-action": "pomo-reset",
+                type: "button",
+            }, "RESET"),
+        ]));
+
+        return wrap;
+    }
+
+    function updatePomoUI() {
+        const p = state.pomodoro;
+        const total = PHASE_DURATIONS[p.phase];
+        const progress = Math.min(1, Math.max(0, 1 - p.secondsRemaining / total));
+        const timeEl = document.querySelector(".pomo-time");
+        if (timeEl) timeEl.textContent = formatTime(p.secondsRemaining);
+        const ringFg = document.querySelector(".pomo-ring-fg");
+        if (ringFg) {
+            const radius = 80;
+            const C = 2 * Math.PI * radius;
+            ringFg.setAttribute("stroke-dashoffset", (C * (1 - progress)).toFixed(1));
+        }
+    }
+
+    function tickPomodoro() {
+        const p = state.pomodoro;
+        if (!p.isRunning) return;
+        p.secondsRemaining--;
+        if (p.secondsRemaining <= 0) {
+            const wasFocus = p.phase === "focus";
+            if (wasFocus) {
+                // Confetti burst from phone center for finishing a focus session
+                const phone = document.querySelector(".phone");
+                if (phone) {
+                    const r = phone.getBoundingClientRect();
+                    spawnConfetti(r.left + r.width / 2, r.top + r.height * 0.45);
+                }
+                p.phase = (p.cycle % 4 === 0) ? "long" : "short";
+            } else {
+                p.phase = "focus";
+                p.cycle++;
+            }
+            p.secondsRemaining = PHASE_DURATIONS[p.phase];
+            if (state.tab === "pomo") render();
+            return;
+        }
+        if (state.tab === "pomo") updatePomoUI();
+    }
+
+    setInterval(tickPomodoro, 1000);
+
     function toggleTask(id) {
         state.tasks.forEach(day => {
             day.tasks.forEach(t => {
@@ -413,6 +525,15 @@
                 const r = actionEl.getBoundingClientRect();
                 spawnConfetti(r.left + r.width * 0.18, r.top + r.height / 2);
             }
+            render();
+        } else if (action === "pomo-toggle") {
+            state.pomodoro.isRunning = !state.pomodoro.isRunning;
+            render();
+        } else if (action === "pomo-reset") {
+            state.pomodoro.isRunning = false;
+            state.pomodoro.phase = "focus";
+            state.pomodoro.cycle = 1;
+            state.pomodoro.secondsRemaining = PHASE_DURATIONS.focus;
             render();
         } else if (action === "flip-card") {
             state.cardFlipped = !state.cardFlipped;

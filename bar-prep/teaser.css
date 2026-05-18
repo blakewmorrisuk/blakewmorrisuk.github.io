@@ -673,6 +673,131 @@
     font-style: italic;
 }
 
+/* === Pomodoro (Focus tab) ===================================== */
+
+.pomo-screen {
+    padding: 26px 22px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.pomo-phase {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    transition: color .35s ease;
+}
+
+.pomo-phase-focus { color: var(--amber); }
+.pomo-phase-short { color: #5fc8e8; }
+.pomo-phase-long  { color: #33b38c; }
+
+.pomo-ring-wrap {
+    position: relative;
+    width: clamp(170px, 56vw, 220px);
+    aspect-ratio: 1;
+    margin-bottom: 14px;
+}
+
+.pomo-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.pomo-ring-bg {
+    fill: none;
+    stroke: rgba(244, 236, 214, 0.07);
+    stroke-width: 5;
+}
+
+.pomo-ring-fg {
+    fill: none;
+    stroke-width: 5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.92s linear, stroke 0.4s ease;
+}
+
+.pomo-ring-focus { stroke: var(--amber); filter: drop-shadow(0 0 12px rgba(232, 166, 74, 0.35)); }
+.pomo-ring-short { stroke: #5fc8e8; filter: drop-shadow(0 0 12px rgba(95, 200, 232, 0.35)); }
+.pomo-ring-long  { stroke: #33b38c; filter: drop-shadow(0 0 12px rgba(51, 179, 140, 0.35)); }
+
+.pomo-time {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: clamp(36px, 11vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--bone);
+    line-height: 1;
+}
+
+.pomo-ring-wrap.is-running .pomo-time {
+    animation: pomo-tick-pulse 1s ease-in-out infinite;
+}
+
+@keyframes pomo-tick-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.82; }
+}
+
+.pomo-meta {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 22px;
+}
+
+.pomo-btn-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    padding: 0 6px;
+}
+
+.pomo-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--rule-dark);
+    color: var(--bone);
+    padding: 12px 8px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background .14s ease, color .14s ease, border-color .14s ease;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.pomo-btn-primary {
+    flex: 2;
+    border-color: var(--amber-dim);
+}
+
+.pomo-btn-primary.pomo-btn-focus           { border-color: rgba(232, 166, 74, 0.6); }
+.pomo-btn-primary.pomo-btn-short           { border-color: rgba(95, 200, 232, 0.5); color: #cef1fb; }
+.pomo-btn-primary.pomo-btn-long            { border-color: rgba(51, 179, 140, 0.5); color: #c7ecd9; }
+
+.pomo-btn-primary.pomo-btn-focus.is-running { background: var(--amber); color: #000; border-color: var(--amber); }
+.pomo-btn-primary.pomo-btn-short.is-running { background: #5fc8e8; color: #001318; border-color: #5fc8e8; }
+.pomo-btn-primary.pomo-btn-long.is-running  { background: #33b38c; color: #001712; border-color: #33b38c; }
+
+.pomo-btn-secondary { color: var(--muted); }
+.pomo-btn-secondary:hover { color: var(--bone); border-color: rgba(244, 236, 214, 0.25); }
+
 /* === Confetti (DOM particles) ================================= */
 
 .confetti {
