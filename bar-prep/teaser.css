@@ -265,20 +265,52 @@
     letter-spacing: 0.6em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background .14s ease, color .14s ease;
+    transition: background .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease;
+    animation: enter-pulse 2.6s ease-in-out infinite;
+    position: relative;
 }
 
-.splash-enter:hover {
+@keyframes enter-pulse {
+    0%, 100% {
+        border-color: rgba(184, 115, 15, 0.55);
+        box-shadow: 0 0 0 0 rgba(232, 166, 74, 0);
+    }
+    50% {
+        border-color: var(--amber);
+        box-shadow: 0 0 20px 1px rgba(232, 166, 74, 0.22), inset 0 0 12px 0 rgba(232, 166, 74, 0.08);
+    }
+}
+
+.splash-enter:hover,
+.splash-enter:focus-visible {
     background: var(--amber);
     color: #000;
+    border-color: var(--amber);
+    box-shadow: 0 0 28px 3px rgba(232, 166, 74, 0.35);
+    animation-play-state: paused;
+    outline: none;
 }
 
 .splash-enter-arrow {
     color: var(--amber);
     margin-left: 6px;
+    display: inline-block;
+    animation: enter-arrow-nudge 2.6s ease-in-out infinite;
+    transition: color .14s ease, transform .14s ease;
 }
 
-.splash-enter:hover .splash-enter-arrow { color: #000; }
+@keyframes enter-arrow-nudge {
+    0%, 55%, 100% { transform: translateX(0); }
+    72%          { transform: translateX(5px); }
+    88%          { transform: translateX(0); }
+}
+
+.splash-enter:hover .splash-enter-arrow,
+.splash-enter:focus-visible .splash-enter-arrow {
+    color: #000;
+    animation-play-state: paused;
+    transform: translateX(0);
+}
 
 /* === Tab screens ============================================== */
 
