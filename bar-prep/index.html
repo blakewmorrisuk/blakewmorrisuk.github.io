@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Bar Prep App — Blake Morris</title>
-    <meta name="description" content="An app to help me study for the bar exam. Will publish in the App Store after July 2026.">
+    <meta name="description" content="An app to help me study for the bar exam. Live interactive demo. Will publish in the App Store after July 2026.">
     <meta name="theme-color" content="#f5f1e8">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Bar Prep App">
-    <meta property="og:description" content="An app to help me study for the bar exam. Will publish in the App Store after July 2026.">
+    <meta property="og:description" content="An app to help me study for the bar exam. Live interactive demo. Will publish in the App Store after July 2026.">
     <meta property="og:url" content="https://blakewmorrisuk.github.io/bar-prep/">
     <meta name="twitter:card" content="summary">
     <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/bar-prep/teaser.css">
 </head>
 <body>
     <main class="page page--sub">
@@ -21,16 +22,41 @@
 
         <span class="status-strip">May 18, 2026 — running on my iPhone</span>
 
-        <p class="sub-body">Building an app to help me study for the bar after my studies in the evening. Will publish in the appstore after the bar in early August.</p>
+        <p class="sub-body">Building an app to help me study for the bar after my studies in the evening. Will publish in the appstore after the bar in early August. The teaser below is a live mini-version with sample data so you can poke around without an iPhone.</p>
 
-        <p class="sub-body">It's a multi-platform iPhone, iPad, and Mac app I'm using to track my Barbri summer plan day-by-day. Tasks, notes, flash cards, and a session log for Adaptibar practice. The lock-screen widget counts down to the exam, and I can mark tasks done from anywhere via Siri Shortcuts.</p>
-
-        <!-- TODO: drop iPhone screenshots into ./screenshots/ and replace the slots below with <img> tags pointing to them. -->
-        <div class="screenshots" aria-label="App screenshots (coming soon)">
-            <div class="screenshot-slot">Screenshot</div>
-            <div class="screenshot-slot">Screenshot</div>
-            <div class="screenshot-slot">Screenshot</div>
+        <div class="teaser" aria-label="Interactive demo of the Bar Prep App">
+            <div class="phone">
+                <div class="phone-screen">
+                    <div class="phone-notch" aria-hidden="true"></div>
+                    <div class="phone-status">
+                        <span class="phone-status-time">9:41</span>
+                        <span class="phone-status-icons">
+                            <span aria-hidden="true">•••</span>
+                            <span aria-hidden="true">◴</span>
+                            <span aria-hidden="true">▮</span>
+                        </span>
+                    </div>
+                    <div class="phone-content" role="region" aria-live="polite"></div>
+                    <nav class="tab-bar" aria-label="App tabs">
+                        <button class="tab-btn active" data-action="tab" data-tab="plan" type="button">
+                            <span class="tab-btn-icon" aria-hidden="true">▦</span>
+                            <span class="tab-btn-label">Plan</span>
+                        </button>
+                        <button class="tab-btn" data-action="tab" data-tab="today" type="button">
+                            <span class="tab-btn-icon" aria-hidden="true">☀</span>
+                            <span class="tab-btn-label">Today</span>
+                        </button>
+                        <button class="tab-btn" data-action="tab" data-tab="cards" type="button">
+                            <span class="tab-btn-icon" aria-hidden="true">▤</span>
+                            <span class="tab-btn-label">Cards</span>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+            <p class="teaser-caption">Tap Enter, then poke around. The countdown is real (live, to July 28). Tasks toggle, cards flip. Sample data only.</p>
         </div>
+
+        <p class="sub-body">The real app is multi-platform (iPhone, iPad, Mac) and syncs the full week board, notes, flash cards, and Adaptibar session log. The lock-screen widget counts down to the exam, and Siri Shortcuts let me mark tasks done or log an Adaptibar session from anywhere.</p>
 
         <p class="sub-body">Once the bar is behind me, I'll de-personalize it (right now my Barbri schedule is hardcoded), add iCloud sync across devices, polish the UI, and ship it. Target: August 2026.</p>
 
@@ -38,5 +64,7 @@
             <a href="/" style="color: var(--ink-soft); text-decoration: none;">&larr; Blake Morris</a>
         </footer>
     </main>
+
+    <script src="/bar-prep/teaser.js" defer></script>
 </body>
 </html>
