@@ -316,15 +316,15 @@
         ctx.textBaseline = "middle";
         if (state.phase === "idle") {
             ctx.fillStyle = MUTED;
-            ctx.font = "bold 11px ui-monospace, 'SF Mono', Menlo, monospace";
-            ctx.fillText("CLICK OR PRESS SPACE TO PLAY", W / 2, 38);
+            ctx.font = "bold 12px ui-monospace, 'SF Mono', Menlo, monospace";
+            ctx.fillText("TAP TO BEGIN", W / 2, 38);
         } else if (state.phase === "dead") {
             ctx.fillStyle = INK;
             ctx.font = "bold 18px ui-monospace, 'SF Mono', Menlo, monospace";
             ctx.fillText("G A M E   O V E R", W / 2, 44);
             ctx.fillStyle = AMBER;
             ctx.font = "bold 10px ui-monospace, 'SF Mono', Menlo, monospace";
-            ctx.fillText("TAP OR PRESS SPACE TO TRY AGAIN", W / 2, 64);
+            ctx.fillText("TAP TO TRY AGAIN", W / 2, 64);
         }
     }
 

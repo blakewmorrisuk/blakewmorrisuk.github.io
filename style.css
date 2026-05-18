@@ -157,14 +157,17 @@ h1.name {
     opacity: 0.65;
 }
 
-.dino-hint kbd {
-    font-family: inherit;
-    font-size: 9px;
-    background: var(--paper);
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    padding: 1px 5px;
-    margin: 0 1px;
+.m-mark {
+    margin-top: 96px;
+    text-align: center;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+    line-height: 1;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* Sub-page styling */
