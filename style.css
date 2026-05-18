@@ -1,0 +1,211 @@
+:root {
+    --bg: #f5f1e8;
+    --paper: #faf6ec;
+    --ink: #1a1612;
+    --ink-soft: #4a423a;
+    --rule: rgba(26, 22, 18, 0.12);
+    --amber: #b8730f;
+    --amber-soft: #e6a345;
+    --serif: "Iowan Old Style", "Charter", "Palatino Linotype", "Palatino", "Georgia", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Inter", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+a { color: var(--amber); }
+
+.page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 56px 28px 80px;
+}
+
+.page-header {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 28px;
+    margin-bottom: 48px;
+}
+
+.eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 18px;
+}
+
+h1.name {
+    font-family: var(--serif);
+    font-size: clamp(36px, 7vw, 52px);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+    line-height: 1.05;
+}
+
+.subtitle {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink-soft);
+}
+
+.projects {
+    display: grid;
+    gap: 22px;
+}
+
+@media (min-width: 720px) {
+    .projects { grid-template-columns: 1fr 1fr; gap: 24px; }
+    .project--featured { grid-column: 1 / -1; }
+}
+
+.project {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 28px 26px;
+    border-radius: 4px;
+    transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+
+.project:hover,
+.project:focus-visible {
+    transform: translateY(-2px);
+    border-color: var(--amber-soft);
+    box-shadow: 0 10px 28px -18px rgba(26, 22, 18, 0.45);
+    outline: none;
+}
+
+.project-title {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+}
+
+.project-desc {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+}
+
+.page-footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-style: italic;
+}
+
+/* Sub-page styling */
+.page--sub {
+    max-width: 720px;
+}
+
+.back-link {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--amber);
+    text-decoration: none;
+    margin-bottom: 32px;
+    letter-spacing: 0.02em;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.sub-title {
+    font-family: var(--serif);
+    font-size: clamp(32px, 6vw, 44px);
+    font-weight: 400;
+    margin-bottom: 24px;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+}
+
+.sub-body {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin-bottom: 28px;
+}
+
+.status-strip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    padding: 7px 14px;
+    border: 1px solid var(--amber-soft);
+    border-radius: 999px;
+    margin-bottom: 36px;
+}
+
+.screenshots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    margin: 32px 0 40px;
+}
+
+.screenshot-slot {
+    aspect-ratio: 9 / 19.5;
+    background: var(--paper);
+    border: 1px dashed var(--rule);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    opacity: 0.45;
+}
+
+/* PorOvr 'not ready' page — deliberately silly */
+.notready {
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow: hidden;
+}
+
+.notready-text {
+    font-family: var(--sans);
+    font-size: clamp(40px, 14vw, 160px);
+    font-weight: 900;
+    letter-spacing: -0.045em;
+    text-align: center;
+    line-height: 0.95;
+    color: var(--ink);
+    transform: rotate(-3.5deg);
+    user-select: none;
+}
