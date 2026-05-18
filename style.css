@@ -170,11 +170,11 @@ h1.name .name-right { text-align: left; }
     margin-top: 96px;
     padding-bottom: 56px;
     text-align: center;
-    font-family: "Limelight", "Della Respira", Georgia, serif;
+    font-family: "Poiret One", "Iceland", "Avenir Next", sans-serif;
     font-weight: 400;
-    font-size: 56px;
+    font-size: 72px;
     color: var(--ink);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
     line-height: 1;
     -webkit-user-select: none;
     user-select: none;
