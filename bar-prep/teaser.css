@@ -641,6 +641,60 @@
     font-style: italic;
 }
 
+/* === Celebration overlays (confetti + hype banner) ============ */
+
+.fx-canvas {
+    position: absolute;
+    top: 44px;
+    left: 0;
+    right: 0;
+    bottom: 64px;
+    width: auto;
+    height: auto;
+    pointer-events: none;
+    z-index: 25;
+}
+
+.hype-banner {
+    position: absolute;
+    top: 44px;
+    bottom: 64px;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 30;
+    padding: 0 18px;
+}
+
+.hype-banner-text {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    font-size: clamp(30px, 8.5vw, 44px);
+    font-weight: 900;
+    letter-spacing: -0.015em;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    padding: 4px 12px;
+
+    background: linear-gradient(135deg, #ffa84e 0%, #fb6f8a 45%, #b465d8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 8px 22px rgba(232, 166, 74, 0.35));
+
+    opacity: 0;
+    transform: scale(0.5) rotate(-2deg);
+    transition: opacity 0.25s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hype-banner.show .hype-banner-text {
+    opacity: 1;
+    transform: scale(1) rotate(-2deg);
+}
+
 /* === Caption beneath phone ==================================== */
 
 .teaser-caption {
