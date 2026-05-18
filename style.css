@@ -37,6 +37,7 @@ a { color: var(--amber); }
     border-bottom: 1px solid var(--rule);
     padding-bottom: 28px;
     margin-bottom: 48px;
+    text-align: center;
 }
 
 .eyebrow {
@@ -161,11 +162,11 @@ h1.name {
     margin-top: 96px;
     padding-bottom: 56px;
     text-align: center;
-    font-family: var(--serif);
+    font-family: var(--sans);
     font-weight: 900;
     font-size: 56px;
     color: var(--ink);
-    letter-spacing: 0;
+    letter-spacing: -0.03em;
     line-height: 1;
     -webkit-user-select: none;
     user-select: none;
