@@ -161,11 +161,11 @@ h1.name {
     margin-top: 96px;
     padding-bottom: 56px;
     text-align: center;
-    font-family: var(--sans);
+    font-family: var(--serif);
     font-weight: 900;
     font-size: 56px;
     color: var(--ink);
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
     line-height: 1;
     -webkit-user-select: none;
     user-select: none;
