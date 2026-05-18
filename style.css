@@ -167,14 +167,14 @@ h1.name .name-right { text-align: left; }
 }
 
 .m-mark {
-    margin-top: 96px;
-    padding-bottom: 56px;
+    margin-top: 48px;
+    padding-bottom: 12px;
     text-align: center;
-    font-family: "Poiret One", "Iceland", "Avenir Next", sans-serif;
-    font-weight: 400;
-    font-size: 72px;
+    font-family: "Josefin Sans", "Avenir Next", "Futura", sans-serif;
+    font-weight: 700;
+    font-size: clamp(36px, 7vw, 52px);
     color: var(--ink);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.01em;
     line-height: 1;
     -webkit-user-select: none;
     user-select: none;
