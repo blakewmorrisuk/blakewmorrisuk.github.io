@@ -4,93 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Blake Morris</title>
-    <meta name="description" content="A small cabinet of things Blake Morris builds after hours — letters, code, and coffee.">
-    <meta name="theme-color" content="#f3ecdc">
+    <meta name="description" content="Personal projects from Blake Morris. Things being built outside of law school.">
+    <meta name="theme-color" content="#f5f1e8">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Blake Morris">
-    <meta property="og:description" content="A small cabinet of things Blake Morris builds after hours — letters, code, and coffee.">
+    <meta property="og:description" content="Personal projects from Blake Morris. Things being built outside of law school.">
     <meta property="og:url" content="https://blakewmorrisuk.github.io/">
     <meta name="twitter:card" content="summary">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,500;0,9..144,600;1,9..144,400&display=swap">
-    <link rel="stylesheet" href="style.css?v=20">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
+    <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
     <main class="page">
-        <header class="masthead">
-            <p class="masthead-kicker">A cabinet of after-hours work</p>
-
-            <h1 class="masthead-title">
-                <span class="t-given">Blake</span>
-                <span class="t-mid">W<span class="t-dot">.</span></span>
-                <span class="t-family">Morris</span>
-            </h1>
-
-            <hr class="rule rule-double">
+        <header class="page-header">
+            <div class="eyebrow">§ Not Law Stuff</div>
+            <h1 class="name"><span class="name-left">Blake</span><span class="name-pivot">W<span class="name-period">.</span></span><span class="name-right">Morris</span></h1>
         </header>
 
-        <section class="plates" aria-label="Projects">
-
-            <!-- PLATE I — Letters (featured) -->
-            <a class="plate plate-feature" href="https://blakewmorrisuk.github.io/love-always-gene/">
-                <figure class="plate-fig plate-fig-ship">
-                    <img src="assets/ship_duo.jpg?v=20" alt="The heavy cruiser U.S.S. New Orleans underway in Puget Sound, 1943" loading="eager" width="1300" height="785">
-                </figure>
-                <div class="plate-body">
-                    <p class="plate-no">Plate I</p>
-                    <h2 class="plate-title">Love, Always — Gene</h2>
-                    <p class="plate-desc">Letters my grandfather wrote my grandmother through basic training, Pearl Harbor, and the long voyage home aboard the Miracle Ship, the U.S.S. New Orleans. I'm transcribing them as written, misspellings and all. Early days yet.</p>
-                    <span class="plate-go">Read the letters <span aria-hidden="true">→</span></span>
-                </div>
+        <section class="projects" aria-label="Projects">
+            <a class="project project--featured" href="https://blakewmorrisuk.github.io/love-always-gene/">
+                <h2 class="project-title">Letters</h2>
+                <p class="project-desc">Love letters from my grandfather to my grandmother. Basic training, the attack on Pearl Harbor, and his harrowing journey aboard the Miracle Ship, the U.S.S. New Orleans. Very early in the project; transcriptions subject to change.</p>
             </a>
 
-            <!-- PLATE II — PorOvr -->
-            <a class="plate" href="/por-ovr/">
-                <figure class="plate-fig plate-fig-coffee">
-                    <img src="assets/coffee_plate.jpg?v=20" alt="Botanical plate of Coffea arabica — branch, flowers, cherries, and bean" loading="lazy" width="900" height="962">
-                </figure>
-                <div class="plate-body">
-                    <p class="plate-no">Plate II</p>
-                    <h2 class="plate-title">PorOvr</h2>
-                    <p class="plate-desc">A standing argument about pouring hot water over a bed of ground coffee, and the small pile of gear and beans I've come to trust. Second place once, which I mention only to retire it.</p>
-                    <span class="plate-go">The gear &amp; the beans <span aria-hidden="true">→</span></span>
-                </div>
+            <a class="project" href="/bar-prep/">
+                <h2 class="project-title">Bar Prep App</h2>
+                <p class="project-desc">Building an app to help me study for the bar after my studies in the evening. Will publish in the appstore after the bar in early August. Click to see where it's at.</p>
             </a>
 
-            <!-- PLATE III — Bar Prep -->
-            <a class="plate" href="/bar-prep/">
-                <figure class="plate-fig plate-fig-mark">
-                    <svg viewBox="0 0 200 200" aria-hidden="true" class="mark-svg">
-                        <rect x="20" y="20" width="160" height="160" rx="4" class="mk-stroke"/>
-                        <line x1="20" y1="64" x2="180" y2="64" class="mk-hair"/>
-                        <line x1="64" y1="20" x2="64" y2="180" class="mk-hair"/>
-                        <path d="M88 96 l16 16 l28 -40" class="mk-check"/>
-                        <circle cx="142" cy="58" r="5" class="mk-dot"/>
-                    </svg>
-                </figure>
-                <div class="plate-body">
-                    <p class="plate-no">Plate III</p>
-                    <h2 class="plate-title">Bar Prep App</h2>
-                    <p class="plate-desc">A study tool I build at night and use the next morning. It counts down to the exam and keeps my week in order. There's a live demo inside you can poke at without an iPhone. Off to the App Store once the bar lets go of me.</p>
-                    <span class="plate-go">Open the demo <span aria-hidden="true">→</span></span>
-                </div>
+            <a class="project" href="/por-ovr/">
+                <h2 class="project-title">PorOvr</h2>
+                <p class="project-desc">Award-winning coffee competitor (second place, but who cares) journals about how complicated pouring hot water on a bed of coffee can be.</p>
             </a>
-
         </section>
 
-        <section class="dino-game" aria-label="A small game">
-            <p class="dino-eyebrow">If you've read this far</p>
-            <canvas id="dino-canvas" width="600" height="150" tabindex="0" aria-label="A small jumping game. Tap to play."></canvas>
+        <section class="dino-game" aria-label="Offline dinosaur easter egg">
+            <canvas id="dino-canvas" width="600" height="150" tabindex="0" aria-label="T-Rex jumping game. Tap to play."></canvas>
             <p class="dino-hint">tap to begin</p>
         </section>
 
-        <footer class="colophon">
-            <span class="colophon-mark" aria-hidden="true">M</span>
-            <p class="colophon-line">Set in Fraunces. Built by hand in Lexington, Kentucky.</p>
-        </footer>
+        <div class="m-mark" aria-hidden="true">M</div>
     </main>
 
-    <script src="dino.js?v=20" defer></script>
+    <script src="dino.js?v=14" defer></script>
 </body>
 </html>

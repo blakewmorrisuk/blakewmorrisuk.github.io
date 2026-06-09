@@ -1,322 +1,218 @@
 :root {
-    /* Palette pulled from the Fable 5 film: terracotta card, cream paper, ink, sage from the plates */
-    --paper:      #f3ecdc;
-    --paper-warm: #f7f1e3;
-    --ink:        #23201a;
-    --ink-soft:   #4f463a;
-    --ink-faint:  #6f6454;
-    --terra:      #b5532a;
-    --terra-deep: #8f3f1f;
-    --sage:       #7d8466;
-    --rule:       rgba(35, 32, 26, 0.16);
-    --rule-soft:  rgba(35, 32, 26, 0.10);
-
-    --display: "Fraunces", "Iowan Old Style", "Palatino Linotype", "Georgia", serif;
-    --body:    "Iowan Old Style", "Charter", "Palatino Linotype", "Palatino", "Georgia", serif;
-    --sans:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    --bg: #f5f1e8;
+    --paper: #faf6ec;
+    --ink: #1a1612;
+    --ink-soft: #4a423a;
+    --rule: rgba(26, 22, 18, 0.12);
+    --amber: #b8730f;
+    --amber-soft: #e6a345;
+    --serif: "Iowan Old Style", "Charter", "Palatino Linotype", "Palatino", "Georgia", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Inter", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {
-    background-color: var(--paper);
-    background-image: url("assets/paper.png?v=20");
-    background-size: 240px 240px;
+    background: var(--bg);
     color: var(--ink);
-    font-family: var(--body);
-    font-size: 17px;
-    line-height: 1.62;
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
 }
 
-a { color: var(--terra); }
+a { color: var(--amber); }
 
 .page {
-    max-width: 940px;
+    max-width: 960px;
     margin: 0 auto;
-    padding: 64px 26px 40px;
+    padding: 56px 28px 80px;
 }
 
-/* ===== Masthead ============================================== */
-
-.masthead {
+.page-header {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 28px;
+    margin-bottom: 48px;
     text-align: center;
-    margin-bottom: 64px;
 }
 
-.masthead-kicker {
-    font-family: var(--sans);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.26em;
-    text-transform: uppercase;
-    color: var(--terra);
-    margin-bottom: 26px;
-}
-
-.masthead-title {
-    position: relative;
-    display: inline-grid;
-    grid-template-columns: 1fr auto 1fr;
-    column-gap: 0.26em;
-    align-items: baseline;
-    font-family: var(--display);
-    font-weight: 340;
-    font-size: clamp(46px, 11vw, 92px);
-    line-height: 0.96;
-    letter-spacing: -0.018em;
-    font-optical-sizing: auto;
-    color: var(--ink);
-}
-
-.masthead-title .t-given  { text-align: right; }
-.masthead-title .t-mid    { text-align: center; }
-.masthead-title .t-family { text-align: left; }
-
-.masthead-title .t-mid {
-    font-style: italic;
-    font-weight: 400;
-    color: var(--terra-deep);
-}
-.masthead-title .t-dot {
-    font-size: 0.55em;
-    opacity: 0.5;
-    vertical-align: 0.06em;
-    margin-left: -0.03em;
-}
-
-/* a real engraver's double rule */
-.rule { border: 0; }
-.rule-double {
-    width: 132px;
-    height: 4px;
-    margin: 38px auto 0;
-    border-top: 1px solid var(--ink);
-    border-bottom: 1px solid var(--ink);
-    background: transparent;
-    opacity: 0.7;
-}
-
-/* ===== Plates =============================================== */
-
-.plates {
-    display: grid;
-    gap: 30px;
-}
-
-.plate {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    align-items: stretch;
-    text-decoration: none;
-    color: inherit;
-    background: var(--paper-warm);
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    overflow: hidden;
-    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
-}
-.plate:hover, .plate:focus-visible {
-    transform: translateY(-3px);
-    border-color: rgba(181, 83, 42, 0.5);
-    box-shadow: 0 18px 40px -26px rgba(35, 32, 26, 0.6);
-    outline: none;
-}
-
-.plate-fig {
-    margin: 0;
-    background: var(--paper);
-    border-right: 1px solid var(--rule-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-.plate-fig img { display: block; width: 100%; height: 100%; object-fit: cover; }
-
-.plate-fig-coffee { padding: 14px; background: #fbf7ec; }
-.plate-fig-coffee img { object-fit: contain; mix-blend-mode: multiply; }
-
-.plate-body { padding: 26px 28px 28px; }
-
-.plate-no {
-    font-family: var(--sans);
-    font-size: 10.5px;
+.eyebrow {
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--terra);
-    margin-bottom: 10px;
-}
-
-.plate-title {
-    font-family: var(--display);
-    font-weight: 500;
-    font-size: clamp(24px, 4vw, 30px);
-    letter-spacing: -0.012em;
-    line-height: 1.08;
-    margin-bottom: 12px;
-    color: var(--ink);
-}
-
-.plate-desc {
-    font-size: 15.5px;
-    line-height: 1.62;
-    color: var(--ink-soft);
+    color: var(--amber);
     margin-bottom: 18px;
 }
 
-.plate-go {
-    font-family: var(--sans);
-    font-size: 12.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: var(--terra-deep);
-}
-.plate-go span { transition: margin-left .16s ease; margin-left: 2px; }
-.plate:hover .plate-go span { margin-left: 6px; }
-
-/* Featured plate: full-width banner image on top */
-.plate-feature {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-}
-.plate-feature .plate-fig-ship {
-    border-right: 0;
-    border-bottom: 1px solid var(--rule-soft);
-    aspect-ratio: 1300 / 560;
-    max-height: 320px;
-}
-.plate-feature .plate-body { padding: 30px 32px 32px; }
-.plate-feature .plate-title { font-size: clamp(28px, 5vw, 40px); }
-.plate-feature .plate-desc  { font-size: 16.5px; max-width: 46em; }
-
-/* The bar-prep card mark */
-.plate-fig-mark { background: #fbf7ec; padding: 26px; }
-.mark-svg { width: 100%; max-width: 130px; height: auto; }
-.mk-stroke { fill: none; stroke: var(--ink); stroke-width: 3; opacity: 0.55; }
-.mk-hair   { stroke: var(--ink); stroke-width: 1; opacity: 0.22; }
-.mk-check  { fill: none; stroke: var(--terra); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
-.mk-dot    { fill: var(--sage); }
-
-@media (max-width: 620px) {
-    .plate { grid-template-columns: 1fr; }
-    .plate-fig {
-        border-right: 0;
-        border-bottom: 1px solid var(--rule-soft);
-        aspect-ratio: 16 / 9;
-    }
-    .plate-fig-coffee { aspect-ratio: 4 / 3; }
-    .plate-fig-mark   { aspect-ratio: 16 / 7; }
-    .plate-feature .plate-fig-ship { aspect-ratio: 16 / 9; max-height: none; }
+h1.name {
+    font-family: var(--serif);
+    font-size: clamp(36px, 7vw, 52px);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+    line-height: 1.05;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    column-gap: 0.28em;
+    align-items: baseline;
 }
 
-/* ===== Dino game (kept) ===================================== */
+h1.name .name-left  { text-align: right; }
+h1.name .name-pivot { text-align: center; }
+h1.name .name-right { text-align: left; }
+
+h1.name .name-period {
+    font-size: 0.6em;
+    opacity: 0.55;
+    margin-left: -0.04em;
+    vertical-align: 0.05em;
+}
+
+.subtitle {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink-soft);
+}
+
+.projects {
+    display: grid;
+    gap: 22px;
+}
+
+@media (min-width: 720px) {
+    .projects { grid-template-columns: 1fr 1fr; gap: 24px; }
+    .project--featured { grid-column: 1 / -1; }
+}
+
+.project {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 28px 26px;
+    border-radius: 4px;
+    transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+
+.project:hover,
+.project:focus-visible {
+    transform: translateY(-2px);
+    border-color: var(--amber-soft);
+    box-shadow: 0 10px 28px -18px rgba(26, 22, 18, 0.45);
+    outline: none;
+}
+
+.project-title {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+}
+
+.project-desc {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+}
+
+.page-footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-style: italic;
+}
+
+/* === Dino game (easter egg) =================================== */
 
 .dino-game {
-    margin-top: 72px;
-    padding-top: 36px;
-    border-top: 1px solid var(--rule-soft);
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--rule);
     display: flex;
     flex-direction: column;
     align-items: center;
 }
-.dino-eyebrow {
-    font-family: var(--sans);
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    margin-bottom: 18px;
-}
+
 #dino-canvas {
     display: block;
     width: 100%;
     max-width: 600px;
     aspect-ratio: 4 / 1;
-    background: var(--paper-warm);
+    background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: 3px;
+    border-radius: 4px;
     outline: none;
     cursor: pointer;
     touch-action: manipulation;
     image-rendering: pixelated;
     -ms-interpolation-mode: nearest-neighbor;
 }
+
 #dino-canvas:focus-visible {
-    border-color: rgba(181, 83, 42, 0.6);
-    box-shadow: 0 0 0 2px rgba(181, 83, 42, 0.6);
+    border-color: var(--amber-soft);
+    box-shadow: 0 0 0 2px var(--amber-soft);
 }
+
 .dino-hint {
     margin-top: 14px;
-    font-family: var(--sans);
     font-size: 10px;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--ink-faint);
-    opacity: 0.7;
+    color: var(--ink-soft);
+    opacity: 0.65;
 }
 
-/* ===== Colophon ============================================= */
-
-.colophon {
-    margin-top: 96px;
-    padding-top: 30px;
-    border-top: 1px solid var(--rule-soft);
+.m-mark {
+    margin-top: 140px;
+    padding-bottom: 4px;
     text-align: center;
-}
-.colophon-mark {
-    display: block;
-    font-family: var(--display);
+    font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif;
     font-weight: 500;
-    font-size: clamp(26px, 4vw, 34px);
+    font-size: clamp(22px, 4vw, 30px);
     color: var(--ink);
-    opacity: 0.5;
+    opacity: 0.55;
+    letter-spacing: 0.04em;
     line-height: 1;
-    margin-bottom: 14px;
     -webkit-user-select: none;
     user-select: none;
 }
-.colophon-line {
-    font-family: var(--sans);
-    font-size: 12px;
-    letter-spacing: 0.03em;
-    color: var(--ink-faint);
+
+/* Sub-page styling */
+.page--sub {
+    max-width: 720px;
 }
-
-/* ===== Reduced motion ====================================== */
-
-@media (prefers-reduced-motion: reduce) {
-    .plate { transition: none; }
-}
-
-/* ===== Sub-page styling (Letters / Bar Prep / PorOvr) ====== */
-/* preserved + retuned to the new palette so existing pages still work */
-
-.page--sub { max-width: 720px; }
 
 .back-link {
     display: inline-block;
-    font-family: var(--sans);
     font-size: 13px;
-    color: var(--terra);
+    color: var(--amber);
     text-decoration: none;
     margin-bottom: 32px;
     letter-spacing: 0.02em;
 }
-.back-link:hover { text-decoration: underline; }
+
+.back-link:hover {
+    text-decoration: underline;
+}
 
 .sub-title {
-    font-family: var(--display);
-    font-size: clamp(32px, 6vw, 46px);
-    font-weight: 500;
+    font-family: var(--serif);
+    font-size: clamp(32px, 6vw, 44px);
+    font-weight: 400;
     margin-bottom: 24px;
-    letter-spacing: -0.014em;
-    line-height: 1.08;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
 }
 
 .sub-body {
@@ -328,14 +224,13 @@ a { color: var(--terra); }
 
 .status-strip {
     display: inline-block;
-    font-family: var(--sans);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--terra);
+    color: var(--amber);
     padding: 7px 14px;
-    border: 1px solid rgba(181, 83, 42, 0.5);
+    border: 1px solid var(--amber-soft);
     border-radius: 999px;
     margin-bottom: 36px;
 }
@@ -346,35 +241,26 @@ a { color: var(--terra); }
     gap: 18px;
     margin: 32px 0 40px;
 }
+
 .screenshot-slot {
     aspect-ratio: 9 / 19.5;
-    background: var(--paper-warm);
+    background: var(--paper);
     border: 1px dashed var(--rule);
     border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--sans);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--ink-faint);
-    opacity: 0.55;
+    color: var(--ink-soft);
+    opacity: 0.45;
 }
 
-.page-footer {
-    margin-top: 64px;
-    padding-top: 24px;
-    border-top: 1px solid var(--rule-soft);
-    font-family: var(--sans);
-    font-size: 12px;
-    color: var(--ink-faint);
-}
-
-/* PorOvr 'not ready' page — left intact in case it's still linked anywhere */
+/* PorOvr 'not ready' page — deliberately silly */
 .notready {
-    background: var(--paper);
+    background: var(--bg);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -382,11 +268,12 @@ a { color: var(--terra); }
     padding: 24px;
     overflow: hidden;
 }
+
 .notready-text {
-    font-family: var(--display);
-    font-size: clamp(40px, 14vw, 150px);
-    font-weight: 600;
-    letter-spacing: -0.04em;
+    font-family: var(--sans);
+    font-size: clamp(40px, 14vw, 160px);
+    font-weight: 900;
+    letter-spacing: -0.045em;
     text-align: center;
     line-height: 0.95;
     color: var(--ink);
