@@ -281,3 +281,58 @@ h1.name .name-period {
     user-select: none;
 }
 
+/* === Light across paper (ambient background) ================== */
+
+.lamplight {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.lamplight::before,
+.lamplight::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 165vmax;
+    height: 165vmax;
+    margin: -82.5vmax 0 0 -82.5vmax;
+    border-radius: 50%;
+    will-change: transform;
+}
+
+/* A broad pool of late-afternoon warmth */
+.lamplight::before {
+    background: radial-gradient(closest-side,
+        rgba(230, 163, 69, 0.13),
+        rgba(230, 163, 69, 0.05) 42%,
+        rgba(230, 163, 69, 0) 72%);
+    animation: lamplight-warm 150s ease-in-out infinite alternate;
+}
+
+/* A paler lift, like the paper catching the light */
+.lamplight::after {
+    background: radial-gradient(closest-side,
+        rgba(255, 251, 240, 0.55),
+        rgba(255, 251, 240, 0.18) 38%,
+        rgba(255, 251, 240, 0) 68%);
+    animation: lamplight-lift 104s ease-in-out infinite alternate;
+}
+
+@keyframes lamplight-warm {
+    from { transform: translate3d(-26vw, -14vh, 0) scale(1); }
+    to   { transform: translate3d(28vw, 16vh, 0) scale(1.18); }
+}
+
+@keyframes lamplight-lift {
+    from { transform: translate3d(30vw, 18vh, 0) scale(1.1); }
+    to   { transform: translate3d(-26vw, -20vh, 0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lamplight::before,
+    .lamplight::after { animation: none; }
+}
