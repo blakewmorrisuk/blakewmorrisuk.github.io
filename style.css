@@ -280,3 +280,19 @@ h1.name .name-period {
     transform: rotate(-3.5deg);
     user-select: none;
 }
+
+/* === Dust in lamplight (ambient background) =================== */
+
+#dust {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #dust { display: none; }
+}
