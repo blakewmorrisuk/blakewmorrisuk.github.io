@@ -258,26 +258,4 @@ h1.name .name-period {
     opacity: 0.45;
 }
 
-/* PorOvr 'not ready' page — deliberately silly */
-.notready {
-    background: var(--bg);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    overflow: hidden;
-}
-
-.notready-text {
-    font-family: var(--sans);
-    font-size: clamp(40px, 14vw, 160px);
-    font-weight: 900;
-    letter-spacing: -0.045em;
-    text-align: center;
-    line-height: 0.95;
-    color: var(--ink);
-    transform: rotate(-3.5deg);
-    user-select: none;
-}
 

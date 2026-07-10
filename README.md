@@ -6,7 +6,7 @@ Plain static HTML + CSS. No build step. Push to `main` and GitHub Pages publishe
 
 ## Pages
 
-- `/` — landing with two project cards
-- `/por-ovr/` — coffee project placeholder
+- `/` — landing page (Letters card, dino easter egg)
+- `404.html` — shown by GitHub Pages for any missing path
 
 The grandfather's letters project lives in its own repo: <https://github.com/blakewmorrisuk/love-always-gene> (deployed at `/love-always-gene/`).
