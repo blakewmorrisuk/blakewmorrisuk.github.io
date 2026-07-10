@@ -1,0 +1,9 @@
+# macOS cruft
+.DS_Store
+
+# Nested working folders that are NOT part of this repo:
+# love-always-gene is its own git repo (github.com/blakewmorrisuk/love-always-gene),
+# deployed separately as a project site. papa-letters-handoff is local-only notes.
+# Ignoring them here means a stray `git add -A` can never commit them into this repo.
+/love-always-gene/
+/papa-letters-handoff/
