@@ -1,11 +1,11 @@
 :root {
-    --bg: #f5f1e8;
-    --paper: #faf6ec;
-    --ink: #1a1612;
-    --ink-soft: #4a423a;
-    --rule: rgba(26, 22, 18, 0.12);
-    --amber: #b8730f;
-    --amber-soft: #e6a345;
+    --bg: #1a2532;
+    --paper: #212f3f;
+    --ink: #e3e0d6;
+    --ink-soft: #b7c1cd;
+    --rule: rgba(217, 223, 231, 0.14);
+    --amber: #c9a85c;
+    --amber-soft: #e0c992;
     --serif: "Iowan Old Style", "Charter", "Palatino Linotype", "Palatino", "Georgia", serif;
     --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Inter", Arial, sans-serif;
 }
@@ -105,7 +105,7 @@ h1.name .name-period {
 .project:focus-visible {
     transform: translateY(-2px);
     border-color: var(--amber-soft);
-    box-shadow: 0 10px 28px -18px rgba(26, 22, 18, 0.45);
+    box-shadow: 0 10px 28px -18px rgba(0, 0, 0, 0.5);
     outline: none;
 }
 
@@ -149,7 +149,7 @@ h1.name .name-period {
     width: 100%;
     max-width: 600px;
     aspect-ratio: 4 / 1;
-    background: var(--paper);
+    background: #f2efe6; /* the game stays a paper artifact on the night desk */
     border: 1px solid var(--rule);
     border-radius: 4px;
     outline: none;
