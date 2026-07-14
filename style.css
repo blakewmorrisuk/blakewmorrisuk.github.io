@@ -41,12 +41,12 @@ a { color: var(--amber); }
 }
 
 .eyebrow {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--amber);
-    margin-bottom: 18px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
 }
 
 h1.name {
@@ -119,9 +119,17 @@ h1.name .name-period {
 }
 
 .project-desc {
-    font-size: 14.5px;
+    font-size: 15px;
     color: var(--ink-soft);
-    line-height: 1.6;
+    line-height: 1.65;
+    max-width: 70ch;
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
+.project-desc + .project-desc {
+    margin-top: 0.9em;
 }
 
 .page-footer {
@@ -258,16 +266,27 @@ h1.name .name-period {
     opacity: 0.45;
 }
 
-/* Pull quote inside the featured Letters card */
+/* Pull quote inside the featured Letters card — set like a block
+   quotation in print: indented, italic, same quiet ink as the body */
 .project-quote {
-    margin-top: 16px;
-    padding-left: 16px;
-    border-left: 2px solid var(--amber-soft);
+    margin: 16px 0 4px 2.5em;
+    max-width: 60ch;
     font-family: var(--serif);
     font-style: italic;
     font-size: 15.5px;
     line-height: 1.65;
-    color: var(--ink);
+    color: var(--ink-soft);
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
+@media (max-width: 480px) {
+    .project-quote { margin-left: 1.25em; }
+}
+
+::selection {
+    background: rgba(201, 168, 92, 0.28);
 }
 
 
