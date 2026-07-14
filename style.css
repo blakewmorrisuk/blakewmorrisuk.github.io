@@ -258,4 +258,16 @@ h1.name .name-period {
     opacity: 0.45;
 }
 
+/* Pull quote inside the featured Letters card */
+.project-quote {
+    margin-top: 16px;
+    padding-left: 16px;
+    border-left: 2px solid var(--amber-soft);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--ink);
+}
+
 
