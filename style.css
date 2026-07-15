@@ -141,46 +141,6 @@ h1.name .name-period {
     font-style: italic;
 }
 
-/* === Dino game (easter egg) =================================== */
-
-.dino-game {
-    margin-top: 64px;
-    padding-top: 32px;
-    border-top: 1px solid var(--rule);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-#dino-canvas {
-    display: block;
-    width: 100%;
-    max-width: 600px;
-    aspect-ratio: 4 / 1;
-    background: #f2efe6; /* the game stays a paper artifact on the night desk */
-    border: 1px solid var(--rule);
-    border-radius: 4px;
-    outline: none;
-    cursor: pointer;
-    touch-action: manipulation;
-    image-rendering: pixelated;
-    -ms-interpolation-mode: nearest-neighbor;
-}
-
-#dino-canvas:focus-visible {
-    border-color: var(--amber-soft);
-    box-shadow: 0 0 0 2px var(--amber-soft);
-}
-
-.dino-hint {
-    margin-top: 14px;
-    font-size: 10px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    opacity: 0.65;
-}
-
 .m-mark {
     margin-top: 140px;
     padding-bottom: 4px;
@@ -279,6 +239,10 @@ h1.name .name-period {
     text-align: justify;
     hyphens: auto;
     -webkit-hyphens: auto;
+}
+
+.project-quote p + p {
+    margin-top: 12px;
 }
 
 @media (max-width: 480px) {
