@@ -30,16 +30,12 @@ a { color: var(--amber); }
 .page {
     max-width: 960px;
     margin: 0 auto;
-    padding: 56px 28px 28px;
-    /* Full-height column so the M plaque can anchor to the foot of the
-       screen instead of floating in leftover space. svh (with vh as the
-       fallback) is pinned to the SMALL viewport, so in-app browsers
-       (Instagram etc.) don't resize the column — and bounce the M —
-       every time their toolbar slides in and out during scroll. */
-    min-height: 100vh;
-    min-height: 100svh;
-    display: flex;
-    flex-direction: column;
+    padding: 56px 28px 72px;
+    /* NOTE: no viewport-height anchoring here. In-app browsers
+       (Instagram's especially) resize their whole window as toolbars
+       collapse, so anything tied to viewport height bounces on scroll.
+       The M plaque sits in normal flow at a fixed distance below the
+       card — stable in every browser. */
 }
 
 .page-header {
@@ -92,7 +88,6 @@ h1.name .name-period {
 .projects {
     display: grid;
     gap: 22px;
-    margin-bottom: 48px;
 }
 
 @media (min-width: 720px) {
@@ -152,14 +147,13 @@ h1.name .name-period {
 }
 
 /* The M monogram sits in a small square plaque — a hairline block around
-   the letter, like a mark engraved on brick or marble. margin-top: auto
-   pushes it to the foot of the full-height page column; the .projects
-   margin-bottom guarantees a minimum gap above it. Kept deliberately
-   small and faint — a maker's stamp, not a signature. */
+   the letter, like a mark engraved on brick or marble. Fixed distance
+   below the card (normal flow, no viewport anchoring — see .page note).
+   Kept deliberately small and faint — a maker's stamp, not a signature. */
 .m-mark {
     width: 44px;
     aspect-ratio: 1;
-    margin: auto auto 150px;
+    margin: 120px auto 0;
     display: flex;
     align-items: center;
     justify-content: center;
