@@ -155,7 +155,7 @@ h1.name .name-period {
 .m-mark {
     width: 44px;
     aspect-ratio: 1;
-    margin: auto auto 72px;
+    margin: auto auto 110px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -174,7 +174,7 @@ h1.name .name-period {
     font-weight: 500;
     font-size: 17px;
     color: var(--ink);
-    opacity: 0.38;
+    opacity: 0.32;
     letter-spacing: 0.04em;
     line-height: 1;
     -webkit-user-select: none;
