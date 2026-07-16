@@ -155,12 +155,19 @@ h1.name .name-period {
 .m-mark {
     width: 44px;
     aspect-ratio: 1;
-    margin: auto auto 0;
+    margin: auto auto 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--rule);
     border-radius: 2px;
+    /* A whisper of white marble fading into the plaque: a diagonal vein
+       and a soft corner sheen. Alphas look strong here but the whole
+       plaque renders at 0.3 opacity, so the effect lands around 5%. */
+    background:
+        linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.16) 47%, transparent 55%),
+        radial-gradient(90% 90% at 28% 18%, rgba(255, 255, 255, 0.18), transparent 58%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.015) 62%);
     font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif;
     font-weight: 500;
     font-size: 17px;
