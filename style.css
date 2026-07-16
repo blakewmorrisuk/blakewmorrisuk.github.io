@@ -30,7 +30,7 @@ a { color: var(--amber); }
 .page {
     max-width: 960px;
     margin: 0 auto;
-    padding: 56px 28px 80px;
+    padding: 56px 28px 44px;
 }
 
 .page-header {
@@ -141,10 +141,17 @@ h1.name .name-period {
     font-style: italic;
 }
 
+/* The M monogram sits in a small square plaque — a hairline block around
+   the letter, like a mark engraved on brick or marble. */
 .m-mark {
-    margin-top: 140px;
-    padding-bottom: 4px;
-    text-align: center;
+    width: 58px;
+    aspect-ratio: 1;
+    margin: 60px auto 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
     font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif;
     font-weight: 500;
     font-size: clamp(22px, 4vw, 30px);
