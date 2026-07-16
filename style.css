@@ -155,26 +155,25 @@ h1.name .name-period {
 .m-mark {
     width: 44px;
     aspect-ratio: 1;
-    margin: auto auto 110px;
+    margin: auto auto 150px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--rule);
+    /* Tone-on-tone: cool slate from the page's own family instead of
+       warm ink dimmed by opacity — sits INTO the navy rather than on
+       top of it. Border fainter than the page hairlines; the matte
+       marble mottling is down at one or two percent. */
+    border: 1px solid rgba(217, 223, 231, 0.09);
     border-radius: 2px;
-    /* A whisper of white marble: matte and cloudy — a flat milky base
-       with irregular soft mottling, no directional sheen (which reads
-       as metal). The whole plaque renders at 0.3 opacity, so the stone
-       lands at one or two percent: felt more than seen. */
     background:
-        radial-gradient(65% 50% at 68% 28%, rgba(255, 255, 255, 0.07), transparent 72%),
-        radial-gradient(55% 65% at 24% 62%, rgba(255, 255, 255, 0.055), transparent 75%),
-        radial-gradient(85% 70% at 52% 88%, rgba(255, 255, 255, 0.035), transparent 80%),
-        rgba(255, 255, 255, 0.035);
+        radial-gradient(65% 50% at 68% 28%, rgba(255, 255, 255, 0.035), transparent 72%),
+        radial-gradient(55% 65% at 24% 62%, rgba(255, 255, 255, 0.028), transparent 75%),
+        radial-gradient(85% 70% at 52% 88%, rgba(255, 255, 255, 0.018), transparent 80%),
+        rgba(255, 255, 255, 0.018);
     font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif;
     font-weight: 500;
     font-size: 17px;
-    color: var(--ink);
-    opacity: 0.32;
+    color: rgba(183, 193, 205, 0.28);
     letter-spacing: 0.04em;
     line-height: 1;
     -webkit-user-select: none;
