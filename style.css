@@ -1,9 +1,9 @@
 :root {
-    --bg: #1a2532;
-    --paper: #212f3f;
-    --ink: #e3e0d6;
-    --ink-soft: #b7c1cd;
-    --rule: rgba(217, 223, 231, 0.14);
+    --bg: #0e0d0b;
+    --paper: #161511;
+    --ink: #e8e4d8;
+    --ink-soft: #aaa494;
+    --rule: rgba(201, 168, 92, 0.22);
     --amber: #c9a85c;
     --amber-soft: #e0c992;
     --serif: "Iowan Old Style", "Charter", "Palatino Linotype", "Palatino", "Georgia", serif;
@@ -157,15 +157,14 @@ h1.name .name-period {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Tone-on-tone: cool slate from the page's own family instead of
-       warm ink dimmed by opacity — sits INTO the navy rather than on
-       top of it. Border fainter than the page hairlines. */
-    border: 1px solid rgba(217, 223, 231, 0.09);
+    /* Tone-on-tone gold on black lacquer: the mark sits INTO the dark
+       rather than on top of it. Border fainter than the page hairlines. */
+    border: 1px solid rgba(201, 168, 92, 0.14);
     border-radius: 2px;
     font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif;
     font-weight: 500;
     font-size: 17px;
-    color: rgba(183, 193, 205, 0.28);
+    color: rgba(224, 201, 146, 0.26);
     letter-spacing: 0.04em;
     line-height: 1;
     -webkit-user-select: none;
