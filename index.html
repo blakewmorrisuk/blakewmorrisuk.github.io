@@ -17,24 +17,85 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=33">
+    <link rel="stylesheet" href="style.css?v=34">
 </head>
 <body>
-    <main class="page">
-        <header class="page-header">
+    <canvas id="etch" aria-hidden="true"></canvas>
+    <main class="page page--index">
+        <header class="index-head">
             <div class="eyebrow">§ Not Law Stuff</div>
             <h1 class="name"><span class="name-left">Blake</span><span class="name-pivot">W<span class="name-period">.</span></span><span class="name-right">Morris</span></h1>
         </header>
 
-        <section class="projects" aria-label="Projects">
-            <a class="project project--featured" href="https://blakewmorrisuk.github.io/love-always-gene/">
-                <h2 class="project-title">Letters</h2>
-                <p class="project-desc">An attempt to preserve family history. These are the wartime love letters from my grandfather to my grandmother. They follow him through basic training, his arrival at Pearl Harbor months before Japan&rsquo;s attack, and his voyage aboard the U.S.S. New Orleans (CA-32).</p>
-            </a>
+        <hr class="strike-rule">
 
+        <section aria-label="Projects">
+            <a class="entry" href="https://blakewmorrisuk.github.io/love-always-gene/">
+                <span class="entry-no">N° 01</span>
+                <h2 class="entry-title">Letters</h2>
+                <p class="entry-desc">An attempt to preserve family history. These are the wartime love letters from my grandfather to my grandmother. They follow him through basic training, his arrival at Pearl Harbor months before Japan&rsquo;s attack, and his voyage aboard the U.S.S. New Orleans (CA-32).</p>
+            </a>
         </section>
 
         <div class="m-mark" aria-hidden="true">M</div>
     </main>
+
+    <script>
+    /* Slow etching: faint gold hairlines strike the black and bleed
+       across it. One line every few seconds, each taking seconds to
+       cross; the field accumulates, then rests. Timestamp-driven, so
+       returning to a backgrounded tab finds the work continued. */
+    (function () {
+      var c = document.getElementById("etch"), x = c.getContext("2d");
+      var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var MAX = 18, BORN_EVERY = [3800, 7200], TAKES = [5200, 9800];
+      var lines = [], W, H, dpr;
+      function rand(a, b) { return a + Math.random() * (b - a); }
+      function span() { // a chord crossing the viewport at a shallow or steep angle
+        var horiz = Math.random() < 0.58;
+        var a = horiz ? rand(-0.22, 0.22) : rand(1.35, 1.79);
+        var cx = rand(W * 0.1, W * 0.9), cy = rand(H * 0.08, H * 0.95);
+        var L = Math.max(W, H) * 1.5, dx = Math.cos(a) * L, dy = Math.sin(a) * L;
+        return { x1: cx - dx, y1: cy - dy, x2: cx + dx, y2: cy + dy,
+                 alpha: rand(0.035, 0.075), born: 0, takes: rand(TAKES[0], TAKES[1]), done: 0 };
+      }
+      function size() {
+        dpr = Math.min(devicePixelRatio || 1, 2);
+        W = innerWidth; H = innerHeight;
+        c.width = W * dpr; c.height = H * dpr;
+        x.setTransform(dpr, 0, 0, dpr, 0, 0);
+        x.lineWidth = 0.8; x.lineCap = "round";
+        lines.forEach(function (l) { seg(l, 0, l.done); }); // repaint what exists
+      }
+      function seg(l, from, to) {
+        if (to <= from) return;
+        x.strokeStyle = "rgba(201, 168, 92, " + l.alpha + ")";
+        x.beginPath();
+        x.moveTo(l.x1 + (l.x2 - l.x1) * from, l.y1 + (l.y2 - l.y1) * from);
+        x.lineTo(l.x1 + (l.x2 - l.x1) * to,   l.y1 + (l.y2 - l.y1) * to);
+        x.stroke();
+      }
+      size(); addEventListener("resize", size);
+      if (reduced) { // static etching, no motion
+        for (var i = 0; i < 9; i++) { var l = span(); l.done = 1; lines.push(l); seg(l, 0, 1); }
+        return;
+      }
+      var active = null;
+      function birth() {
+        if (lines.length >= MAX) return;
+        active = span(); active.born = performance.now(); lines.push(active);
+        requestAnimationFrame(grow);
+      }
+      function grow(now) {
+        if (!active) return;
+        var p = Math.min(1, (now - active.born) / active.takes);
+        var eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        seg(active, active.done, eased); active.done = eased;
+        if (p < 1) { requestAnimationFrame(grow); }
+        else { active = null; setTimeout(birth, rand(BORN_EVERY[0], BORN_EVERY[1])); }
+      }
+      setTimeout(birth, rand(2200, 4200));
+    })();
+    </script>
 </body>
 </html>

@@ -27,6 +27,59 @@ body {
 
 a { color: var(--amber); }
 
+/* Etching canvas sits behind everything, never intercepts */
+#etch {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+}
+.page--index { position: relative; z-index: 1; }
+
+/* Index layout: entry hangs off a gold hairline, no card box */
+.index-head { text-align: center; padding-top: 20px; }
+.strike-rule {
+    border: 0;
+    height: 1px;
+    width: 140px;
+    margin: 52px auto 56px;
+    background: linear-gradient(to right, transparent, var(--amber), transparent);
+}
+.entry {
+    display: block;
+    max-width: 470px;
+    margin: 0 auto;
+    text-decoration: none;
+    color: inherit;
+    border-left: 1px solid rgba(201, 168, 92, 0.4);
+    padding: 6px 0 8px 24px;
+    transition: border-color .3s ease;
+}
+.entry:hover, .entry:focus-visible { border-left-color: var(--amber-soft); outline: none; }
+.entry-no {
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--amber);
+    font-family: var(--serif);
+}
+.entry-title {
+    font-family: var(--serif);
+    font-size: 23px;
+    font-weight: 500;
+    margin: 8px 0 10px;
+    color: var(--ink);
+}
+.entry-desc {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
 .page {
     max-width: 960px;
     margin: 0 auto;
