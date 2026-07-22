@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=39">
+    <link rel="stylesheet" href="style.css?v=40">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -43,22 +43,22 @@
 
     <script>
     /* Slow etching: faint gold hairlines strike the black and bleed
-       across it. Where two lines cross — the one place the field is
-       naturally brighter — a minuscule M sits in the overlap, at the
-       same brightness the crossing itself would have: invisible in the
-       weave, a monogram under a loupe. For a brief window of each
-       stroke a dim ember rides the tip and spits a few tiny sparks.
-       The active stroke renders whole on #etch2 (one pass, no alpha
-       stacking) and is stamped onto #etch only when it lands. Up to a
-       hundred lines; then the surface rests. Timestamp-driven, so a
-       backgrounded tab returns to find the work continued. */
+       across it. Where two lines cross, a minuscule M hides in the
+       junction's natural brightness. Each crossing is also a string:
+       pass the pointer over it (or tap it) and it glows briefly and
+       answers with a short bowed violin note — pitch by height, on a
+       pentatonic scale so any strum stays consonant. Audio is
+       synthesized in-page (no files, no libraries) and wakes on the
+       first touch, as browsers require. For a brief window of each
+       stroke a dim ember rides the tip and spits sparks. Up to a
+       hundred lines; then the surface rests. */
     (function () {
       var c = document.getElementById("etch"), x = c.getContext("2d");
       var c2 = document.getElementById("etch2"), x2 = c2.getContext("2d");
       var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       var MAX = 100, BORN_EVERY = [3400, 6800], TAKES = [5200, 9800];
       var GOLD = "201, 168, 92", EMBER = "196, 102, 54", EMBER_HI = "214, 126, 70";
-      var lines = [], sparks = [], W, H, dpr, lastT = 0;
+      var lines = [], sparks = [], glows = [], W, H, dpr, lastT = 0;
       function rand(a, b) { return a + Math.random() * (b - a); }
       function span() {
         var horiz = Math.random() < 0.58;
@@ -69,8 +69,6 @@
                  alpha: rand(0.035, 0.075), born: 0, takes: rand(TAKES[0], TAKES[1]), done: 0,
                  b0: rand(0.05, 0.63), bLen: rand(0.18, 0.32), marks: [] };
       }
-      /* Crossings of a new line with every line already in the field.
-         The new line owns the mark; it surfaces as its tip passes. */
       function crossings(nl) {
         var out = [];
         for (var i = 0; i < lines.length; i++) {
@@ -84,7 +82,7 @@
           if (s <= 0.001 || s >= 0.999 || u <= 0.001 || u >= 0.999) continue;
           var px = nl.x1 + d1x * s, py = nl.y1 + d1y * s;
           if (px < -4 || px > W + 4 || py < -4 || py > H + 4) continue;
-          out.push({ s: s, x: px, y: py, a: Math.min(0.13, nl.alpha + o.alpha) });
+          out.push({ s: s, x: px, y: py, a: Math.min(0.13, nl.alpha + o.alpha), last: 0 });
         }
         out.sort(function (a, b) { return a.s - b.s; });
         return out;
@@ -97,7 +95,6 @@
         lines.forEach(function (l) { if (l.done > 0) stamp(x, l, l.done); });
       }
       function at(l, t) { return [l.x1 + (l.x2 - l.x1) * t, l.y1 + (l.y2 - l.y1) * t]; }
-      /* One whole stroke to progress t, plus the crossing-M's passed. */
       function stamp(ctx, l, t) {
         var a = at(l, 0), b = at(l, t);
         ctx.lineWidth = 0.8;
@@ -124,6 +121,19 @@
           x2.fillRect(s.x, s.y, 1.1, 1.1);
         }
       }
+      function renderGlows(now) {
+        for (var i = glows.length - 1; i >= 0; i--) {
+          var gl = glows[i], age = now - gl.born;
+          if (age > gl.life) { glows.splice(i, 1); continue; }
+          var k = age < 120 ? age / 120 : 1 - (age - 120) / (gl.life - 120);
+          var g = x2.createRadialGradient(gl.x, gl.y, 0, gl.x, gl.y, 11);
+          g.addColorStop(0, "rgba(224, 201, 146, " + (0.28 * k).toFixed(3) + ")");
+          g.addColorStop(0.55, "rgba(" + GOLD + ", " + (0.10 * k).toFixed(3) + ")");
+          g.addColorStop(1, "rgba(" + GOLD + ", 0)");
+          x2.fillStyle = g;
+          x2.beginPath(); x2.arc(gl.x, gl.y, 11, 0, 7); x2.fill();
+        }
+      }
       function ember(l, t, now, dt) {
         var w = (t - l.b0) / l.bLen;
         if (w > 0 && w < 1) {
@@ -143,8 +153,76 @@
                           life: rand(420, 900), born: now, a: rand(0.10, 0.20) });
           }
         }
-        renderSparks(now, dt);
       }
+      /* ---- the strings -------------------------------------------- */
+      var actx = null, master = null;
+      function wake() {
+        if (!actx) {
+          try {
+            actx = new (window.AudioContext || window.webkitAudioContext)();
+            master = actx.createGain(); master.gain.value = 0.16; master.connect(actx.destination);
+          } catch (e) { return; }
+        }
+        if (actx.state === "suspended") actx.resume();
+      }
+      /* A minor pentatonic across two octaves; height picks the string. */
+      var SEMIS = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];
+      function freqFor(y) {
+        var i = Math.max(0, Math.min(SEMIS.length - 1, Math.floor((1 - y / H) * SEMIS.length)));
+        return 220 * Math.pow(2, SEMIS[i] / 12);
+      }
+      function bow(f) { // one short violin stroke
+        if (!actx || actx.state !== "running") return;
+        var t0 = actx.currentTime;
+        var o = actx.createOscillator(); o.type = "sawtooth"; o.frequency.value = f;
+        var vib = actx.createOscillator(); vib.frequency.value = 5.6;
+        var vibG = actx.createGain(); vibG.gain.setValueAtTime(0, t0);
+        vibG.gain.linearRampToValueAtTime(f * 0.006, t0 + 0.35); // vibrato arrives late
+        vib.connect(vibG); vibG.connect(o.frequency);
+        var lp = actx.createBiquadFilter(); lp.type = "lowpass";
+        lp.frequency.value = Math.min(3400, f * 6); lp.Q.value = 0.7;
+        var bp = actx.createBiquadFilter(); bp.type = "peaking";
+        bp.frequency.value = 980; bp.Q.value = 1.1; bp.gain.value = 5; // body formant
+        var g = actx.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.14);   // bow bites
+        g.gain.setValueAtTime(0.5, t0 + 0.42);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.15); // lift
+        o.connect(lp); lp.connect(bp); bp.connect(g); g.connect(master);
+        o.start(t0); vib.start(t0);
+        o.stop(t0 + 1.25); vib.stop(t0 + 1.25);
+      }
+      var idling = false;
+      function idle(now) {
+        var dt = Math.min(100, now - lastT); lastT = now;
+        x2.clearRect(0, 0, W, H);
+        renderSparks(now, dt); renderGlows(now);
+        if ((sparks.length || glows.length) && !active) requestAnimationFrame(idle);
+        else { idling = false; if (!active) x2.clearRect(0, 0, W, H); }
+      }
+      function kickIdle() {
+        if (!idling && !active) { idling = true; lastT = performance.now(); requestAnimationFrame(idle); }
+      }
+      function strum(e) {
+        var px = e.clientX, py = e.clientY, now = performance.now();
+        for (var i = 0; i < lines.length; i++) {
+          var l = lines[i];
+          for (var j = 0; j < l.marks.length; j++) {
+            var m = l.marks[j];
+            if (m.s > l.done) break;
+            var ddx = m.x - px, ddy = m.y - py;
+            if (ddx * ddx + ddy * ddy < 256 && now - m.last > 650) {
+              m.last = now;
+              glows.push({ x: m.x, y: m.y, born: now, life: 900 });
+              bow(freqFor(m.y));
+              kickIdle();
+            }
+          }
+        }
+      }
+      addEventListener("pointerdown", function (e) { wake(); strum(e); }, { passive: true });
+      addEventListener("pointermove", function (e) { if (actx && actx.state === "running") strum(e); }, { passive: true });
+      /* ------------------------------------------------------------- */
       size(); addEventListener("resize", size);
       if (reduced) {
         for (var i = 0; i < 30; i++) { var l = span(); l.marks = crossings(l); l.done = 1; lines.push(l); stamp(x, l, 1); }
@@ -164,21 +242,16 @@
         var eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
         active.done = eased;
         x2.clearRect(0, 0, W, H);
-        stamp(x2, active, eased);      // whole partial stroke, single pass
+        stamp(x2, active, eased);
         ember(active, eased, now, dt);
+        renderSparks(now, dt); renderGlows(now);
         if (p < 1) { requestAnimationFrame(grow); }
         else {
-          stamp(x, active, 1);         // land it on the permanent field once
+          stamp(x, active, 1);
           active = null;
-          requestAnimationFrame(drain);
+          kickIdle();
           setTimeout(birth, rand(BORN_EVERY[0], BORN_EVERY[1]));
         }
-      }
-      function drain(now) {
-        var dt = Math.min(100, now - lastT); lastT = now;
-        x2.clearRect(0, 0, W, H);
-        renderSparks(now, dt);
-        if (sparks.length && !active) requestAnimationFrame(drain);
       }
       setTimeout(birth, rand(2200, 4200));
     })();
