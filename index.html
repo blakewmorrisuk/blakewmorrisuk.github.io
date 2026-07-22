@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=44">
+    <link rel="stylesheet" href="style.css?v=45">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -193,12 +193,12 @@
          slower swell into a longer sustain. chr is the crossing's own
          fixed character; panX places the string in the room. Scheduled
          even mid-resume so taps always land. */
-      function bow(i, vel, chr, panX, dur) {
+      function bow(i, vel, chr, panX, dur, rate) {
         if (!actx) return;
         var b = buffers[i]; if (!b) return;
         var t0 = actx.currentTime;
         var src = actx.createBufferSource(); src.buffer = b;
-        src.playbackRate.value = 1 + (Math.random() * 0.008 - 0.004);
+        src.playbackRate.value = (rate || 1) * (1 + (Math.random() * 0.008 - 0.004));
         var peak = (0.28 + vel * 0.55) * chr * rand(0.9, 1.1);
         var attack = 0.10 - vel * 0.06;
         var hold = 0.35 + vel * 0.85 + rand(0, 0.35);
@@ -270,23 +270,43 @@
             if (lines[i].marks[j].s <= lines[i].done) out.push(lines[i].marks[j]);
         return out;
       }
-      /* One click, one performance: the rhythm and shape of the 1942
-         refrain "Praise the Lord and Pass the Ammunition" — coined by
-         the chaplain of Gene's own ship at Pearl Harbor — hummed onto
-         the field's pentatonic strings. (An allusion in rhythm and
-         contour, not the tune's actual scale.) The phrase walks the
-         crossings in a different spatial order each click — tracing
-         one line, sweeping across, or rising — at a slightly
-         different tempo and register, so it is never twice the same. */
-      var ANTHEM_I = [6, 5, 6, 5, 4, 5, 4, 3, 4, 2, 4, 6, 8];
-      var ANTHEM_B = [1.5, 0.5, 1.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 0.5, 0.75, 2];
-      var ANTHEM_V = [0.68, 0.42, 0.62, 0.42, 0.5, 0.44, 0.5, 0.46, 0.5, 0.66, 0.5, 0.58, 0.72];
+      /* One click, one performance: the 1942 refrain coined aboard
+         Gene's ship at Pearl Harbor, transcribed from the Loesser sheet
+         and voiced on the field's violin strings. Pitches the pentatonic
+         set lacks are made by re-tuning the nearest real sample (two
+         semitones at most — inaudible on a bowed string). The phrase
+         walks the crossings in a different spatial order, tempo, and
+         register each click, so it is never twice the same.
+         Notes are [semitone rel E4, beats, velocity]; -1 = breath. */
+      var ANTHEM = [
+        [7, 1.5, 0.7], [5, 0.5, 0.45], [3, 1.5, 0.62], [-1, 0.25, 0],   /* Praise the Lord, */
+        [5, 0.5, 0.5], [7, 0.5, 0.55], [7, 0.5, 0.5], [7, 0.5, 0.52],   /* and pass the am- */
+        [5, 0.5, 0.5], [2, 0.5, 0.48], [0, 1.75, 0.6], [-1, 0.5, 0],    /* mu-ni-tion! */
+        [7, 1.5, 0.68], [5, 0.5, 0.45], [3, 1.5, 0.6], [-1, 0.25, 0],
+        [5, 0.5, 0.5], [7, 0.5, 0.55], [7, 0.5, 0.5], [7, 0.5, 0.52],
+        [5, 0.5, 0.5], [2, 0.5, 0.48], [0, 1.75, 0.6], [-1, 0.5, 0],
+        [7, 1.5, 0.72], [5, 0.5, 0.48], [3, 1.5, 0.62], [-1, 0.25, 0],
+        [5, 0.5, 0.52], [7, 0.5, 0.56], [7, 0.5, 0.52], [7, 0.5, 0.54],
+        [5, 0.5, 0.52], [2, 0.5, 0.5], [0, 1.0, 0.55],                   /* ...tion */
+        [5, 0.5, 0.55], [7, 0.5, 0.6],                                   /* and we'll */
+        [8, 1.5, 0.72], [7, 1.5, 0.68], [3, 3.0, 0.75]                   /* ALL STAY FREE */
+      ];
+      /* chromatic solver: nearest real sample, gently re-tuned */
+      var BASES = [["a3",-7],["c4",-4],["e4",0],["g4",3],["a4",5],["c5",8],["e5",12],["g5",15],["a5",17]];
+      function voice(semi) {
+        var best = 0, bd = 99;
+        for (var i = 0; i < BASES.length; i++) {
+          var d = Math.abs(semi - BASES[i][1]);
+          if (d < bd) { bd = d; best = i; }
+        }
+        return { i: SAMPLES.indexOf(BASES[best][0]),
+                 rate: Math.pow(2, (semi - BASES[best][1]) / 12) };
+      }
       function perform() {
         if (performing) return;
         var all = landedMarks(), seq = [], t = 140;
-        var beat = rand(400, 480);                       // martial, unhurried
-        var shift = -Math.floor(Math.random() * 3);      // register varies per click
-        var n = ANTHEM_I.length;
+        var beat = rand(400, 460);
+        var shift = Math.random() < 0.5 ? 0 : -5;   /* home register or a fourth below */
         var order;
         if (all.length >= 3) {
           var mode = Math.random();
@@ -308,14 +328,18 @@
         } else {
           var el = document.getElementById("m-play"), r = el.getBoundingClientRect();
           order = [{ x: r.left + r.width / 2, y: r.top + r.height / 2, chr: 1, last: 0 }];
-          n = 10;                                        // first phrase only, hummed at the plaque
         }
-        for (var i = 0; i < n; i++) {
-          var m = order[i % order.length];
-          var note = Math.max(0, Math.min(8, ANTHEM_I[i] + shift));
-          var vel = Math.max(0.15, Math.min(0.9, ANTHEM_V[i] + rand(-0.05, 0.05)));
-          seq.push({ m: m, note: note, t: t, vel: vel, dur: beat * ANTHEM_B[i] / 1000 });
-          t += beat * ANTHEM_B[i] * rand(0.96, 1.05);
+        var oi = 0;
+        for (var i = 0; i < ANTHEM.length; i++) {
+          var n = ANTHEM[i];
+          if (n[0] >= 0) {
+            var v = voice(n[0] + shift);
+            var m = order[oi % order.length]; oi++;
+            seq.push({ m: m, idx: v.i, rate: v.rate, t: t,
+                       vel: Math.max(0.15, Math.min(0.9, n[2] + rand(-0.04, 0.04))),
+                       dur: beat * n[1] / 1000 });
+          }
+          t += beat * n[1] * rand(0.97, 1.04);
         }
         performing = true;
         seq.forEach(function (nn) {
@@ -323,7 +347,7 @@
             var now = performance.now();
             nn.m.last = now;
             glows.push({ x: nn.m.x, y: nn.m.y, born: now, life: 650 + nn.vel * 500 });
-            bow(nn.note, nn.vel, nn.m.chr || 1, nn.m.x, nn.dur);
+            bow(nn.idx, nn.vel, nn.m.chr || 1, nn.m.x, nn.dur, nn.rate);
             kickIdle();
           }, nn.t);
         });
