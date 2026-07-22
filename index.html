@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=41">
+    <link rel="stylesheet" href="style.css?v=42">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -83,7 +83,7 @@
           if (s <= 0.001 || s >= 0.999 || u <= 0.001 || u >= 0.999) continue;
           var px = nl.x1 + d1x * s, py = nl.y1 + d1y * s;
           if (px < -4 || px > W + 4 || py < -4 || py > H + 4) continue;
-          out.push({ s: s, x: px, y: py, a: Math.min(0.13, nl.alpha + o.alpha), last: 0 });
+          out.push({ s: s, x: px, y: py, a: Math.min(0.13, nl.alpha + o.alpha), last: 0, chr: rand(0.8, 1.15) });
         }
         out.sort(function (a, b) { return a.s - b.s; });
         return out;
@@ -163,7 +163,7 @@
         if (!actx) {
           try {
             actx = new (window.AudioContext || window.webkitAudioContext)();
-            master = actx.createGain(); master.gain.value = 0.8; master.connect(actx.destination);
+            master = actx.createGain(); master.gain.value = 0.3; master.connect(actx.destination);
             var ir = actx.createBuffer(2, Math.floor(actx.sampleRate * 1.6), actx.sampleRate);
             for (var ch = 0; ch < 2; ch++) {
               var d = ir.getChannelData(ch);
@@ -188,19 +188,35 @@
       function noteFor(y) {
         return Math.max(0, Math.min(SAMPLES.length - 1, Math.floor((1 - y / H) * SAMPLES.length)));
       }
-      function bow(i) { // one real stroke; scheduled even mid-resume so taps always land
+      /* One stroke. vel 0..1 is bow pressure: a slow drift brushes the
+         string softly and briefly; a fast strum digs in — louder, a
+         slower swell into a longer sustain. chr is the crossing's own
+         fixed character; panX places the string in the room. Scheduled
+         even mid-resume so taps always land. */
+      function bow(i, vel, chr, panX) {
         if (!actx) return;
         var b = buffers[i]; if (!b) return;
         var t0 = actx.currentTime;
         var src = actx.createBufferSource(); src.buffer = b;
-        src.playbackRate.value = 1 + (Math.random() * 0.006 - 0.003);
+        src.playbackRate.value = 1 + (Math.random() * 0.008 - 0.004);
+        var peak = (0.28 + vel * 0.55) * chr * rand(0.9, 1.1);
+        var attack = 0.10 - vel * 0.06;
+        var hold = 0.35 + vel * 0.85 + rand(0, 0.35);
+        var release = 0.5 + vel * 0.45;
         var g = actx.createGain();
         g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.9, t0 + 0.04);
-        g.gain.setValueAtTime(0.9, t0 + 1.2);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.4);
-        src.connect(g); g.connect(master); g.connect(wet);
-        src.start(t0); src.stop(t0 + 2.5);
+        g.gain.exponentialRampToValueAtTime(peak, t0 + attack);
+        g.gain.setValueAtTime(peak, t0 + attack + hold);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + hold + release);
+        var tail = g;
+        if (actx.createStereoPanner) {
+          var pan = actx.createStereoPanner();
+          pan.pan.value = Math.max(-0.6, Math.min(0.6, (panX / W) * 1.2 - 0.6));
+          g.connect(pan); tail = pan;
+        }
+        src.connect(g); tail.connect(master); tail.connect(wet);
+        src.start(t0, vel > 0.6 ? 0 : rand(0, 0.1));
+        src.stop(t0 + attack + hold + release + 0.1);
       }
       var idling = false;
       function idle(now) {
@@ -213,8 +229,17 @@
       function kickIdle() {
         if (!idling && !active) { idling = true; lastT = performance.now(); requestAnimationFrame(idle); }
       }
+      var lastPX = null, lastPY = 0, lastPT = 0;
       function strum(e) {
         var px = e.clientX, py = e.clientY, now = performance.now();
+        var vel;
+        if (e.type === "pointerdown" || lastPX === null || now - lastPT > 300) {
+          vel = rand(0.35, 0.7);           // a tap: a middling stroke, varied
+        } else {
+          var d = Math.hypot(px - lastPX, py - lastPY), dtm = Math.max(8, now - lastPT);
+          vel = Math.max(0.08, Math.min(1, (d / dtm) / 1.8));
+        }
+        lastPX = px; lastPY = py; lastPT = now;
         var r = e.pointerType === "touch" ? 28 : 16, r2 = r * r;
         for (var i = 0; i < lines.length; i++) {
           var l = lines[i];
@@ -224,8 +249,8 @@
             var ddx = m.x - px, ddy = m.y - py;
             if (ddx * ddx + ddy * ddy < r2 && now - m.last > 650) {
               m.last = now;
-              glows.push({ x: m.x, y: m.y, born: now, life: 900 });
-              bow(noteFor(m.y));
+              glows.push({ x: m.x, y: m.y, born: now, life: 700 + vel * 500 });
+              bow(noteFor(m.y), vel, m.chr, m.x);
               kickIdle();
             }
           }
