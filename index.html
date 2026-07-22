@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=46">
+    <link rel="stylesheet" href="style.css?v=47">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -387,6 +387,19 @@
         var p = Math.min(1, (now - active.born) / active.takes);
         var eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
         active.done = eased;
+        /* a born crossing sounds its string, softly, once — if the
+           visitor has already woken audio with a first touch */
+        for (var mi = 0; mi < active.marks.length; mi++) {
+          var mk = active.marks[mi];
+          if (mk.s > eased) break;
+          if (!mk.sounded) {
+            mk.sounded = true;
+            if (actx) {
+              bow(noteFor(mk.y), rand(0.2, 0.36), mk.chr, mk.x);
+              glows.push({ x: mk.x, y: mk.y, born: now, life: 620 });
+            }
+          }
+        }
         x2.clearRect(0, 0, W, H);
         stamp(x2, active, eased);
         ember(active, eased, now, dt);
