@@ -28,7 +28,7 @@ body {
 a { color: var(--amber); }
 
 /* Etching canvas sits behind everything, never intercepts */
-#etch {
+#etch, #etch2 {
     position: fixed;
     inset: 0;
     width: 100vw;

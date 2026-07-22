@@ -17,10 +17,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=34">
+    <link rel="stylesheet" href="style.css?v=35">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
+    <canvas id="etch2" aria-hidden="true"></canvas>
     <main class="page page--index">
         <header class="index-head">
             <div class="eyebrow">§ Not Law Stuff</div>
@@ -42,42 +43,62 @@
 
     <script>
     /* Slow etching: faint gold hairlines strike the black and bleed
-       across it. One line every few seconds, each taking seconds to
-       cross; the field accumulates, then rests. Timestamp-driven, so
-       returning to a backgrounded tab finds the work continued. */
+       across it, each led by a faint burn — a small traveling glow at
+       the tip, like a slow meteor whose trail stays. One line every few
+       seconds, up to a hundred; then the surface rests. Trails
+       accumulate on #etch; the burn rides #etch2, cleared each frame.
+       Timestamp-driven, so a backgrounded tab returns to find the work
+       continued. */
     (function () {
       var c = document.getElementById("etch"), x = c.getContext("2d");
+      var c2 = document.getElementById("etch2"), x2 = c2.getContext("2d");
       var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      var MAX = 18, BORN_EVERY = [3800, 7200], TAKES = [5200, 9800];
+      var MAX = 100, BORN_EVERY = [3400, 6800], TAKES = [5200, 9800];
       var lines = [], W, H, dpr;
       function rand(a, b) { return a + Math.random() * (b - a); }
-      function span() { // a chord crossing the viewport at a shallow or steep angle
+      function span() {
         var horiz = Math.random() < 0.58;
         var a = horiz ? rand(-0.22, 0.22) : rand(1.35, 1.79);
         var cx = rand(W * 0.1, W * 0.9), cy = rand(H * 0.08, H * 0.95);
         var L = Math.max(W, H) * 1.5, dx = Math.cos(a) * L, dy = Math.sin(a) * L;
         return { x1: cx - dx, y1: cy - dy, x2: cx + dx, y2: cy + dy,
-                 alpha: rand(0.035, 0.075), born: 0, takes: rand(TAKES[0], TAKES[1]), done: 0 };
+                 alpha: rand(0.028, 0.058), born: 0, takes: rand(TAKES[0], TAKES[1]), done: 0 };
       }
       function size() {
         dpr = Math.min(devicePixelRatio || 1, 2);
         W = innerWidth; H = innerHeight;
-        c.width = W * dpr; c.height = H * dpr;
-        x.setTransform(dpr, 0, 0, dpr, 0, 0);
-        x.lineWidth = 0.8; x.lineCap = "round";
-        lines.forEach(function (l) { seg(l, 0, l.done); }); // repaint what exists
+        [c, c2].forEach(function (cv) { cv.width = W * dpr; cv.height = H * dpr; });
+        [x, x2].forEach(function (ctx) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.lineCap = "round"; });
+        x.lineWidth = 0.8;
+        lines.forEach(function (l) { seg(l, 0, l.done); });
       }
+      function at(l, t) { return [l.x1 + (l.x2 - l.x1) * t, l.y1 + (l.y2 - l.y1) * t]; }
       function seg(l, from, to) {
         if (to <= from) return;
+        var a = at(l, from), b = at(l, to);
         x.strokeStyle = "rgba(201, 168, 92, " + l.alpha + ")";
-        x.beginPath();
-        x.moveTo(l.x1 + (l.x2 - l.x1) * from, l.y1 + (l.y2 - l.y1) * from);
-        x.lineTo(l.x1 + (l.x2 - l.x1) * to,   l.y1 + (l.y2 - l.y1) * to);
-        x.stroke();
+        x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke();
+      }
+      function burn(l, t) { // the traveling head: soft glow dot + short comet tail
+        x2.clearRect(0, 0, W, H);
+        if (t <= 0 || t >= 1) return;
+        var tip = at(l, t);
+        var back = at(l, Math.max(0, t - 70 / Math.hypot(l.x2 - l.x1, l.y2 - l.y1)));
+        var tail = x2.createLinearGradient(back[0], back[1], tip[0], tip[1]);
+        tail.addColorStop(0, "rgba(224, 201, 146, 0)");
+        tail.addColorStop(1, "rgba(224, 201, 146, 0.22)");
+        x2.strokeStyle = tail; x2.lineWidth = 1.1;
+        x2.beginPath(); x2.moveTo(back[0], back[1]); x2.lineTo(tip[0], tip[1]); x2.stroke();
+        var g = x2.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 11);
+        g.addColorStop(0, "rgba(232, 212, 160, 0.34)");
+        g.addColorStop(0.4, "rgba(224, 201, 146, 0.12)");
+        g.addColorStop(1, "rgba(224, 201, 146, 0)");
+        x2.fillStyle = g;
+        x2.beginPath(); x2.arc(tip[0], tip[1], 11, 0, 7); x2.fill();
       }
       size(); addEventListener("resize", size);
-      if (reduced) { // static etching, no motion
-        for (var i = 0; i < 9; i++) { var l = span(); l.done = 1; lines.push(l); seg(l, 0, 1); }
+      if (reduced) {
+        for (var i = 0; i < 30; i++) { var l = span(); l.done = 1; lines.push(l); seg(l, 0, 1); }
         return;
       }
       var active = null;
@@ -91,8 +112,9 @@
         var p = Math.min(1, (now - active.born) / active.takes);
         var eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
         seg(active, active.done, eased); active.done = eased;
+        burn(active, eased);
         if (p < 1) { requestAnimationFrame(grow); }
-        else { active = null; setTimeout(birth, rand(BORN_EVERY[0], BORN_EVERY[1])); }
+        else { x2.clearRect(0, 0, W, H); active = null; setTimeout(birth, rand(BORN_EVERY[0], BORN_EVERY[1])); }
       }
       setTimeout(birth, rand(2200, 4200));
     })();
