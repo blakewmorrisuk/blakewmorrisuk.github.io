@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=49">
+    <link rel="stylesheet" href="style.css?v=50">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -209,7 +209,7 @@
         var t0 = (when && when > actx.currentTime) ? when : actx.currentTime;
         var src = actx.createBufferSource(); src.buffer = b;
         src.playbackRate.value = (rate || 1) * (1 + (Math.random() * 0.008 - 0.004));
-        var peak = (0.28 + vel * 0.55) * chr * rand(0.9, 1.1);
+        var peak = (0.28 + vel * 0.55) * chr * rand(0.9, 1.1) * (arguments.length > 7 && arguments[7] ? arguments[7] : 1);
         var attack = 0.10 - vel * 0.06;
         var hold = 0.35 + vel * 0.85 + rand(0, 0.35);
         var release = 0.5 + vel * 0.45;
@@ -345,16 +345,28 @@
           order = [{ x: r.left + r.width / 2, y: r.top + r.height / 2, chr: 1, last: 0 }];
         }
         performing = true;
+        /* section size grows with the field — fuller, never louder:
+           per-voice gain is divided by sqrt(section) so the level
+           stays put while the texture thickens */
+        var count = order.length;
+        var section = count >= 400 ? 8 : count >= 150 ? 6 : count >= 50 ? 4 : count >= 12 ? 3 : count >= 4 ? 2 : 1;
+        var gs = 1 / Math.sqrt(section);
         var t0 = actx.currentTime + 0.18;
         var cues = [];
         for (var i = 0, oi = 0; i < MELODY.length; i++) {
           var e = MELODY[i];
           if (e[0] < 0) continue;
           var v = voice(e[0] + shift);
-          var m = order[oi % order.length]; oi++;
           var when = t0 + e[1] * spb;
-          bow(v.i, e[3], m.chr || 1, m.x, e[2] * spb, v.rate, when);
-          cues.push({ m: m, at: when, vel: e[3] });
+          for (var k = 0; k < section; k++) {
+            var m = order[(oi + k) % order.length];
+            var lead = k === 0;
+            var at = when + (lead ? 0 : rand(0.006, 0.038));
+            bow(v.i, lead ? e[3] : e[3] * rand(0.8, 0.95), m.chr || 1, m.x,
+                e[2] * spb, v.rate * (lead ? 1 : rand(0.9965, 1.0035)), at, gs);
+            cues.push({ m: m, at: at, vel: e[3] * (lead ? 1 : 0.7) });
+          }
+          oi += Math.max(1, Math.floor(section / 2));
         }
         /* glows follow the audio clock, not a timer */
         function chase() {
