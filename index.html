@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=47">
+    <link rel="stylesheet" href="style.css?v=49">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -51,13 +51,14 @@
        height across nine notes chosen so any strum stays consonant.
        Samples load lazily on first touch, which also wakes audio as
        browsers require. For a brief window of each
-       stroke a dim ember rides the tip and spits sparks. Up to a
-       hundred lines; then the surface rests. */
+       stroke a dim ember rides the tip and spits sparks. Lines are
+       permanent and accumulate to a thousand, each crossing the field
+       at its own pace. */
     (function () {
       var c = document.getElementById("etch"), x = c.getContext("2d");
       var c2 = document.getElementById("etch2"), x2 = c2.getContext("2d");
       var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      var MAX = 100, BORN_EVERY = [3400, 6800], TAKES = [5200, 9800];
+      var MAX = 1000, BORN_EVERY = [3400, 6800], TAKES = [4000, 12500];
       var GOLD = "201, 168, 92", EMBER = "196, 102, 54", EMBER_HI = "214, 126, 70";
       var lines = [], sparks = [], glows = [], W, H, dpr, lastT = 0;
       function rand(a, b) { return a + Math.random() * (b - a); }
@@ -93,7 +94,7 @@
         W = innerWidth; H = innerHeight;
         [c, c2].forEach(function (cv) { cv.width = W * dpr; cv.height = H * dpr; });
         [x, x2].forEach(function (ctx) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.lineCap = "butt"; });
-        lines.forEach(function (l) { if (l.done > 0) stamp(x, l, l.done); });
+        repaintField();
       }
       function at(l, t) { return [l.x1 + (l.x2 - l.x1) * t, l.y1 + (l.y2 - l.y1) * t]; }
       function stamp(ctx, l, t) {
@@ -109,6 +110,15 @@
           if (m.s > t) break;
           ctx.fillStyle = "rgba(" + GOLD + ", " + m.a + ")";
           ctx.fillText("M", m.x, m.y);
+        }
+      }
+      /* Full repaint of the permanent field (used on resize). */
+      function repaintField() {
+        x.clearRect(0, 0, W, H);
+        for (var j = 0; j < lines.length; j++) {
+          var ln = lines[j];
+          if (ln === active) continue;
+          stamp(x, ln, ln.done);
         }
       }
       function renderSparks(now, dt) {
@@ -406,8 +416,10 @@
         renderSparks(now, dt); renderGlows(now);
         if (p < 1) { requestAnimationFrame(grow); }
         else {
-          stamp(x, active, 1);
+          var landed = active;
           active = null;
+          landed.done = 1;
+          stamp(x, landed, 1);
           kickIdle();
           setTimeout(birth, rand(BORN_EVERY[0], BORN_EVERY[1]));
         }
