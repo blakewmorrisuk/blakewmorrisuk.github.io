@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=52">
+    <link rel="stylesheet" href="style.css?v=53">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -290,15 +290,15 @@
       var MELODY = [
         /* M1 */ [7, 0, 1.5, .68], [5, 1.5, .5, .45], [3, 2, 1.5, .6], [5, 3.5, .5, .5],
         /* M2 */ [7, 4, .5, .62], [7, 4.5, .32, .3], [7, 5, .75, .55], [5, 5.75, .25, .38],
-                 [2, 6, .5, .48], [0, 6.5, 1.5, .6],
+                 [2, 6, .5, .66], [0, 6.5, 1.5, .6],
         /* M3 */ [7, 8, 1.5, .66], [5, 9.5, .5, .45], [3, 10, 1.5, .6], [5, 11.5, .5, .5],
         /* M4 */ [7, 12, .5, .62], [7, 12.5, .32, .3], [7, 13, .75, .55], [5, 13.75, .25, .38],
-                 [2, 14, .5, .48], [0, 14.5, 1.5, .6],
+                 [2, 14, .5, .66], [0, 14.5, 1.5, .6],
         /* M5 */ [7, 16, 1.5, .7], [5, 17.5, .5, .48], [3, 18, 1.5, .62], [5, 19.5, .5, .52],
         /* M6 */ [7, 20, .5, .62], [7, 20.5, .32, .3], [7, 21, .75, .55], [5, 21.75, .25, .38],
-                 [2, 22, .5, .5], [0, 22.5, .5, .52], [5, 23, .5, .55], [7, 23.5, .5, .6],
-        /* M7 */ [8, 24, 1.5, .72], [7, 25.5, 1.5, .68],
-        /* M8 */ [3, 27, 4, .75]
+                 [2, 22, .5, .66], [0, 22.5, .5, .52], [5, 23, .5, .55], [7, 23.5, .5, .6],
+        /* M7 */ [8, 24, 2, .72], [7, 26, 2, .68],
+        /* M8 */ [3, 28, 4, .75]
       ];
       /* assert: no event crosses its barline off-grid and total is 8 bars */
       (function () {
@@ -320,7 +320,7 @@
       function perform() {
         if (performing || !actx) return;
         var all = landedMarks();
-        var bpm = 126, spb = 60 / bpm;
+        var bpm = 132, spb = 60 / bpm;
         var shift = Math.random() < 0.5 ? 0 : -5;
         var order;
         if (all.length >= 3) {
