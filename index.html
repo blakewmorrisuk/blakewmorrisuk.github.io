@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="style.css?v=36">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -43,9 +43,10 @@
 
     <script>
     /* Slow etching: faint gold hairlines strike the black and bleed
-       across it, each led by a faint burn — a small traveling glow at
-       the tip, like a slow meteor whose trail stays. One line every few
-       seconds, up to a hundred; then the surface rests. Trails
+       across it. For a brief window of each stroke — sometimes early,
+       sometimes midway, sometimes late — a dim ember rides the tip,
+       like a spark off a welder's torch, then is gone. One line every
+       few seconds, up to a hundred; then the surface rests. Trails
        accumulate on #etch; the burn rides #etch2, cleared each frame.
        Timestamp-driven, so a backgrounded tab returns to find the work
        continued. */
@@ -53,7 +54,7 @@
       var c = document.getElementById("etch"), x = c.getContext("2d");
       var c2 = document.getElementById("etch2"), x2 = c2.getContext("2d");
       var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      var MAX = 100, BORN_EVERY = [3400, 6800], TAKES = [5200, 9800];
+      var MAX = 100, BORN_EVERY = [3400, 6800], TAKES = [9000, 16000];
       var lines = [], W, H, dpr;
       function rand(a, b) { return a + Math.random() * (b - a); }
       function span() {
@@ -62,7 +63,8 @@
         var cx = rand(W * 0.1, W * 0.9), cy = rand(H * 0.08, H * 0.95);
         var L = Math.max(W, H) * 1.5, dx = Math.cos(a) * L, dy = Math.sin(a) * L;
         return { x1: cx - dx, y1: cy - dy, x2: cx + dx, y2: cy + dy,
-                 alpha: rand(0.028, 0.058), born: 0, takes: rand(TAKES[0], TAKES[1]), done: 0 };
+                 alpha: rand(0.028, 0.058), born: 0, takes: rand(TAKES[0], TAKES[1]), done: 0,
+                 b0: rand(0.05, 0.63), bLen: rand(0.18, 0.32) };
       }
       function size() {
         dpr = Math.min(devicePixelRatio || 1, 2);
@@ -79,22 +81,24 @@
         x.strokeStyle = "rgba(201, 168, 92, " + l.alpha + ")";
         x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke();
       }
-      function burn(l, t) { // the traveling head: soft glow dot + short comet tail
+      function burn(l, t) { // a dim ember, visible only inside its window
         x2.clearRect(0, 0, W, H);
-        if (t <= 0 || t >= 1) return;
+        var w = (t - l.b0) / l.bLen;
+        if (w <= 0 || w >= 1) return;
+        var f = w < 0.25 ? w / 0.25 : (w > 0.75 ? (1 - w) / 0.25 : 1); // ease in/out
         var tip = at(l, t);
-        var back = at(l, Math.max(0, t - 70 / Math.hypot(l.x2 - l.x1, l.y2 - l.y1)));
+        var back = at(l, Math.max(0, t - 42 / Math.hypot(l.x2 - l.x1, l.y2 - l.y1)));
         var tail = x2.createLinearGradient(back[0], back[1], tip[0], tip[1]);
-        tail.addColorStop(0, "rgba(224, 201, 146, 0)");
-        tail.addColorStop(1, "rgba(224, 201, 146, 0.22)");
-        x2.strokeStyle = tail; x2.lineWidth = 1.1;
+        tail.addColorStop(0, "rgba(196, 102, 54, 0)");
+        tail.addColorStop(1, "rgba(196, 102, 54, " + 0.10 * f + ")");
+        x2.strokeStyle = tail; x2.lineWidth = 1;
         x2.beginPath(); x2.moveTo(back[0], back[1]); x2.lineTo(tip[0], tip[1]); x2.stroke();
-        var g = x2.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 11);
-        g.addColorStop(0, "rgba(232, 212, 160, 0.34)");
-        g.addColorStop(0.4, "rgba(224, 201, 146, 0.12)");
-        g.addColorStop(1, "rgba(224, 201, 146, 0)");
+        var g = x2.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 8);
+        g.addColorStop(0, "rgba(214, 126, 70, " + 0.16 * f + ")");
+        g.addColorStop(0.45, "rgba(196, 102, 54, " + 0.07 * f + ")");
+        g.addColorStop(1, "rgba(196, 102, 54, 0)");
         x2.fillStyle = g;
-        x2.beginPath(); x2.arc(tip[0], tip[1], 11, 0, 7); x2.fill();
+        x2.beginPath(); x2.arc(tip[0], tip[1], 8, 0, 7); x2.fill();
       }
       size(); addEventListener("resize", size);
       if (reduced) {
