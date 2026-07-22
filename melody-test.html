@@ -28,7 +28,7 @@ Judge against the record; report corrections per lyric.</p>
 <div class="row">
   <button id="go">Play</button>
   <button id="stop">Stop</button>
-  <label>BPM <input id="bpm" type="range" min="96" max="160" value="132"> <span id="bpmv">132</span></label>
+  <label>BPM <input id="bpm" type="range" min="96" max="160" value="122"> <span id="bpmv">122</span></label>
   <label><input id="click" type="checkbox" checked> metronome</label>
 </div>
 <div class="row"><span class="big" id="pos">bar – · beat –</span></div>
@@ -37,12 +37,12 @@ Judge against the record; report corrections per lyric.</p>
 /* [semitone rel E4, startBeat, durationBeats, vel, lyric] — 4/4, 8 bars.
    M1 checkpoint: B4 1.5 "Praise" / A4 .5 "The" / G4 1.5 "Lord" / A4 .5 "and" */
 var MELODY = [
- [7,0,1.5,.68,"Praise"],[5,1.5,.5,.45,"The"],[3,2,1.5,.6,"Lord,"],[5,3.5,.5,.5,"and"],
- [7,4,.5,.62,"pass"],[7,4.5,.32,.3,"the"],[7,5,.75,.55,"am-"],[5,5.75,.25,.38,"mu-"],[2,6,.5,.66,"ni-"],[0,6.5,1.5,.6,"tion!"],
- [7,8,1.5,.66,"Praise"],[5,9.5,.5,.45,"The"],[3,10,1.5,.6,"Lord,"],[5,11.5,.5,.5,"and"],
- [7,12,.5,.62,"pass"],[7,12.5,.32,.3,"the"],[7,13,.75,.55,"am-"],[5,13.75,.25,.38,"mu-"],[2,14,.5,.66,"ni-"],[0,14.5,1.5,.6,"tion!"],
- [7,16,1.5,.7,"Praise"],[5,17.5,.5,.48,"The"],[3,18,1.5,.62,"Lord,"],[5,19.5,.5,.52,"and"],
- [7,20,.5,.62,"pass"],[7,20.5,.32,.3,"the"],[7,21,.75,.56,"am-"],[5,21.75,.25,.38,"mu-"],[2,22,.5,.66,"ni-"],[0,22.5,.5,.52,"tion"],[5,23,.5,.55,"and"],[7,23.5,.5,.6,"we'll"],
+ [7,0,1.5,.72,"Praise"],[5,1.5,.5,.4,"The"],[3,2,1.5,.6,"Lord,"],[5,3.6,.4,.42,"and"],
+ [7,4,.5,.78,"pass"],[7,4.5,.32,.3,"the"],[7,5,.75,.62,"am-"],[5,5.75,.25,.55,"mu-"],[2,6,.5,.38,"ni-"],[0,6.5,1.5,.68,"tion!"],
+ [7,8,1.5,.72,"Praise"],[5,9.5,.5,.4,"The"],[3,10,1.5,.6,"Lord,"],[5,11.6,.4,.42,"and"],
+ [7,12,.5,.78,"pass"],[7,12.5,.32,.3,"the"],[7,13,.75,.62,"am-"],[5,13.75,.25,.55,"mu-"],[2,14,.5,.38,"ni-"],[0,14.5,1.5,.68,"tion!"],
+ [7,16,1.5,.72,"Praise"],[5,17.5,.5,.4,"The"],[3,18,1.5,.62,"Lord,"],[5,19.6,.4,.42,"and"],
+ [7,20,.5,.78,"pass"],[7,20.5,.32,.3,"the"],[7,21,.75,.62,"am-"],[5,21.75,.25,.55,"mu-"],[2,22,.5,.38,"ni-"],[0,22.5,.5,.52,"tion"],[5,23,.5,.55,"and"],[7,23.5,.5,.6,"we'll"],
  [8,24,2,.72,"ALL"],[7,26,2,.68,"STAY"],
  [3,28,4,.75,"FREE"]
 ];
