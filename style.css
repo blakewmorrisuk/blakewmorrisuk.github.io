@@ -222,6 +222,15 @@ h1.name .name-period {
     line-height: 1;
     -webkit-user-select: none;
     user-select: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    transition: border-color .5s ease, color .5s ease;
+}
+.m-mark:hover, .m-mark:focus-visible {
+    border-color: rgba(201, 168, 92, 0.4);
+    color: rgba(224, 201, 146, 0.55);
+    outline: none;
 }
 
 /* Sub-page styling */

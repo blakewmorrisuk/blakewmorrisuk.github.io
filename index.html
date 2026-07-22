@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=42">
+    <link rel="stylesheet" href="style.css?v=44">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -38,7 +38,7 @@
             </a>
         </section>
 
-        <div class="m-mark" aria-hidden="true">M</div>
+        <button class="m-mark" id="m-play" aria-label="Play the lines">M</button>
     </main>
 
     <script>
@@ -193,7 +193,7 @@
          slower swell into a longer sustain. chr is the crossing's own
          fixed character; panX places the string in the room. Scheduled
          even mid-resume so taps always land. */
-      function bow(i, vel, chr, panX) {
+      function bow(i, vel, chr, panX, dur) {
         if (!actx) return;
         var b = buffers[i]; if (!b) return;
         var t0 = actx.currentTime;
@@ -203,6 +203,11 @@
         var attack = 0.10 - vel * 0.06;
         var hold = 0.35 + vel * 0.85 + rand(0, 0.35);
         var release = 0.5 + vel * 0.45;
+        if (dur) { /* rhythmic articulation: fill the note's slot, then yield */
+          attack = Math.min(attack, dur * 0.25);
+          hold = Math.max(0.08, dur * 0.8 - attack);
+          release = Math.min(0.6, Math.max(0.25, dur * 0.5));
+        }
         var g = actx.createGain();
         g.gain.setValueAtTime(0.0001, t0);
         g.gain.exponentialRampToValueAtTime(peak, t0 + attack);
@@ -256,6 +261,77 @@
           }
         }
       }
+      /* ---- the M performs the field ------------------------------- */
+      var performing = false;
+      function landedMarks() {
+        var out = [];
+        for (var i = 0; i < lines.length; i++)
+          for (var j = 0; j < lines[i].marks.length; j++)
+            if (lines[i].marks[j].s <= lines[i].done) out.push(lines[i].marks[j]);
+        return out;
+      }
+      /* One click, one performance: the rhythm and shape of the 1942
+         refrain "Praise the Lord and Pass the Ammunition" — coined by
+         the chaplain of Gene's own ship at Pearl Harbor — hummed onto
+         the field's pentatonic strings. (An allusion in rhythm and
+         contour, not the tune's actual scale.) The phrase walks the
+         crossings in a different spatial order each click — tracing
+         one line, sweeping across, or rising — at a slightly
+         different tempo and register, so it is never twice the same. */
+      var ANTHEM_I = [6, 5, 6, 5, 4, 5, 4, 3, 4, 2, 4, 6, 8];
+      var ANTHEM_B = [1.5, 0.5, 1.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 0.5, 0.75, 2];
+      var ANTHEM_V = [0.68, 0.42, 0.62, 0.42, 0.5, 0.44, 0.5, 0.46, 0.5, 0.66, 0.5, 0.58, 0.72];
+      function perform() {
+        if (performing) return;
+        var all = landedMarks(), seq = [], t = 140;
+        var beat = rand(400, 480);                       // martial, unhurried
+        var shift = -Math.floor(Math.random() * 3);      // register varies per click
+        var n = ANTHEM_I.length;
+        var order;
+        if (all.length >= 3) {
+          var mode = Math.random();
+          var rich = lines.filter(function (l) {
+            var k = 0;
+            for (var j = 0; j < l.marks.length; j++) if (l.marks[j].s <= l.done) k++;
+            return k >= 3;
+          });
+          if (mode < 0.4 && rich.length) {
+            var L = rich[Math.floor(Math.random() * rich.length)];
+            order = L.marks.filter(function (m) { return m.s <= L.done; });
+            if (Math.random() < 0.5) order = order.slice().reverse();
+          } else if (mode < 0.7) {
+            order = all.slice().sort(function (a, b) { return a.x - b.x; });
+            if (Math.random() < 0.5) order.reverse();
+          } else {
+            order = all.slice().sort(function (a, b) { return b.y - a.y; });
+          }
+        } else {
+          var el = document.getElementById("m-play"), r = el.getBoundingClientRect();
+          order = [{ x: r.left + r.width / 2, y: r.top + r.height / 2, chr: 1, last: 0 }];
+          n = 10;                                        // first phrase only, hummed at the plaque
+        }
+        for (var i = 0; i < n; i++) {
+          var m = order[i % order.length];
+          var note = Math.max(0, Math.min(8, ANTHEM_I[i] + shift));
+          var vel = Math.max(0.15, Math.min(0.9, ANTHEM_V[i] + rand(-0.05, 0.05)));
+          seq.push({ m: m, note: note, t: t, vel: vel, dur: beat * ANTHEM_B[i] / 1000 });
+          t += beat * ANTHEM_B[i] * rand(0.96, 1.05);
+        }
+        performing = true;
+        seq.forEach(function (nn) {
+          setTimeout(function () {
+            var now = performance.now();
+            nn.m.last = now;
+            glows.push({ x: nn.m.x, y: nn.m.y, born: now, life: 650 + nn.vel * 500 });
+            bow(nn.note, nn.vel, nn.m.chr || 1, nn.m.x, nn.dur);
+            kickIdle();
+          }, nn.t);
+        });
+        setTimeout(function () { performing = false; }, t + 1600);
+      }
+      var mBtn = document.getElementById("m-play");
+      if (mBtn) mBtn.addEventListener("click", function () { wake(); perform(); });
+      /* ------------------------------------------------------------- */
       addEventListener("pointerdown", function (e) { wake(); strum(e); }, { passive: true });
       addEventListener("pointermove", function (e) { if (actx) strum(e); }, { passive: true });
       /* ------------------------------------------------------------- */
