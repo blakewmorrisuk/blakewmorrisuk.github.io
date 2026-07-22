@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=40">
+    <link rel="stylesheet" href="style.css?v=41">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -46,10 +46,11 @@
        across it. Where two lines cross, a minuscule M hides in the
        junction's natural brightness. Each crossing is also a string:
        pass the pointer over it (or tap it) and it glows briefly and
-       answers with a short bowed violin note — pitch by height, on a
-       pentatonic scale so any strum stays consonant. Audio is
-       synthesized in-page (no files, no libraries) and wakes on the
-       first touch, as browsers require. For a brief window of each
+       answers with a real bowed violin note (VSCO 2 CE solo violin,
+       public domain, vendored in /audio like the fonts) — pitch by
+       height across nine notes chosen so any strum stays consonant.
+       Samples load lazily on first touch, which also wakes audio as
+       browsers require. For a brief window of each
        stroke a dim ember rides the tip and spits sparks. Up to a
        hundred lines; then the surface rests. */
     (function () {
@@ -154,43 +155,52 @@
           }
         }
       }
-      /* ---- the strings -------------------------------------------- */
-      var actx = null, master = null;
+      /* ---- the strings: real violin, vendored ---------------------- */
+      var actx = null, master = null, wet = null, loading = false;
+      var SAMPLES = ["a3", "c4", "e4", "g4", "a4", "c5", "e5", "g5", "a5"];
+      var buffers = new Array(SAMPLES.length);
       function wake() {
         if (!actx) {
           try {
             actx = new (window.AudioContext || window.webkitAudioContext)();
-            master = actx.createGain(); master.gain.value = 0.16; master.connect(actx.destination);
+            master = actx.createGain(); master.gain.value = 0.8; master.connect(actx.destination);
+            var ir = actx.createBuffer(2, Math.floor(actx.sampleRate * 1.6), actx.sampleRate);
+            for (var ch = 0; ch < 2; ch++) {
+              var d = ir.getChannelData(ch);
+              for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2.8);
+            }
+            var conv = actx.createConvolver(); conv.buffer = ir;
+            wet = actx.createGain(); wet.gain.value = 0.22;
+            wet.connect(conv); conv.connect(master);
           } catch (e) { return; }
         }
         if (actx.state === "suspended") actx.resume();
+        if (!loading) {
+          loading = true;
+          SAMPLES.forEach(function (n, i) {
+            fetch("audio/" + n + ".wav").then(function (r) { return r.arrayBuffer(); })
+              .then(function (ab) { return actx.decodeAudioData(ab); })
+              .then(function (b) { buffers[i] = b; })
+              .catch(function () {});
+          });
+        }
       }
-      /* A minor pentatonic across two octaves; height picks the string. */
-      var SEMIS = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];
-      function freqFor(y) {
-        var i = Math.max(0, Math.min(SEMIS.length - 1, Math.floor((1 - y / H) * SEMIS.length)));
-        return 220 * Math.pow(2, SEMIS[i] / 12);
+      function noteFor(y) {
+        return Math.max(0, Math.min(SAMPLES.length - 1, Math.floor((1 - y / H) * SAMPLES.length)));
       }
-      function bow(f) { // one short violin stroke
-        if (!actx || actx.state !== "running") return;
+      function bow(i) { // one real stroke; scheduled even mid-resume so taps always land
+        if (!actx) return;
+        var b = buffers[i]; if (!b) return;
         var t0 = actx.currentTime;
-        var o = actx.createOscillator(); o.type = "sawtooth"; o.frequency.value = f;
-        var vib = actx.createOscillator(); vib.frequency.value = 5.6;
-        var vibG = actx.createGain(); vibG.gain.setValueAtTime(0, t0);
-        vibG.gain.linearRampToValueAtTime(f * 0.006, t0 + 0.35); // vibrato arrives late
-        vib.connect(vibG); vibG.connect(o.frequency);
-        var lp = actx.createBiquadFilter(); lp.type = "lowpass";
-        lp.frequency.value = Math.min(3400, f * 6); lp.Q.value = 0.7;
-        var bp = actx.createBiquadFilter(); bp.type = "peaking";
-        bp.frequency.value = 980; bp.Q.value = 1.1; bp.gain.value = 5; // body formant
+        var src = actx.createBufferSource(); src.buffer = b;
+        src.playbackRate.value = 1 + (Math.random() * 0.006 - 0.003);
         var g = actx.createGain();
         g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.14);   // bow bites
-        g.gain.setValueAtTime(0.5, t0 + 0.42);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.15); // lift
-        o.connect(lp); lp.connect(bp); bp.connect(g); g.connect(master);
-        o.start(t0); vib.start(t0);
-        o.stop(t0 + 1.25); vib.stop(t0 + 1.25);
+        g.gain.exponentialRampToValueAtTime(0.9, t0 + 0.04);
+        g.gain.setValueAtTime(0.9, t0 + 1.2);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.4);
+        src.connect(g); g.connect(master); g.connect(wet);
+        src.start(t0); src.stop(t0 + 2.5);
       }
       var idling = false;
       function idle(now) {
@@ -205,23 +215,24 @@
       }
       function strum(e) {
         var px = e.clientX, py = e.clientY, now = performance.now();
+        var r = e.pointerType === "touch" ? 28 : 16, r2 = r * r;
         for (var i = 0; i < lines.length; i++) {
           var l = lines[i];
           for (var j = 0; j < l.marks.length; j++) {
             var m = l.marks[j];
             if (m.s > l.done) break;
             var ddx = m.x - px, ddy = m.y - py;
-            if (ddx * ddx + ddy * ddy < 256 && now - m.last > 650) {
+            if (ddx * ddx + ddy * ddy < r2 && now - m.last > 650) {
               m.last = now;
               glows.push({ x: m.x, y: m.y, born: now, life: 900 });
-              bow(freqFor(m.y));
+              bow(noteFor(m.y));
               kickIdle();
             }
           }
         }
       }
       addEventListener("pointerdown", function (e) { wake(); strum(e); }, { passive: true });
-      addEventListener("pointermove", function (e) { if (actx && actx.state === "running") strum(e); }, { passive: true });
+      addEventListener("pointermove", function (e) { if (actx) strum(e); }, { passive: true });
       /* ------------------------------------------------------------- */
       size(); addEventListener("resize", size);
       if (reduced) {
