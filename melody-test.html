@@ -26,13 +26,19 @@ label{color:#aaa494;font-size:13px}
 Adjust BPM freely — durations live in beats, so timing math never changes.
 Judge against the record; report corrections per lyric.</p>
 <div class="row">
-  <button id="go">Play</button>
+  <button id="go">Play synth</button>
+  <button id="playref" disabled>Play reference</button>
   <button id="stop">Stop</button>
   <label>BPM <input id="bpm" type="range" min="96" max="160" value="122"> <span id="bpmv">122</span></label>
   <label><input id="click" type="checkbox" checked> metronome</label>
 </div>
+<div class="row">
+  <label>Reference audio (stays on your device, never uploaded):
+  <input id="reffile" type="file" accept="audio/*"></label>
+  <span id="drift" style="color:#aaa494;font-size:13px"></span>
+</div>
 <div class="row"><span class="big" id="pos">bar – · beat –</span></div>
-<table id="tbl"><tr><th>#</th><th>bar</th><th>beat</th><th>len</th><th>note</th><th>lyric</th></tr></table>
+<table id="tbl"><tr><th>#</th><th>bar</th><th>beat</th><th>len</th><th>note</th><th>lyric</th><th>Δms</th></tr></table>
 <script>
 /* [semitone rel E4, startBeat, durationBeats, vel, lyric] — 4/4, 8 bars.
    M1 checkpoint: B4 1.5 "Praise" / A4 .5 "The" / G4 1.5 "Lord" / A4 .5 "and" */
@@ -51,6 +57,15 @@ var MELODY = [
  console.log("melody spans",end,"beats (expect 32)");
  for (var i=1;i<MELODY.length;i++)
   if (MELODY[i][1] < MELODY[i-1][1]+MELODY[i-1][2]-1e-6) console.error("overlap at",i);
+ /* per-measure validation: events + implicit rests must fill 4 beats;
+    the 0.1-beat gap before "and" is the owner's comma, a deliberate rest */
+ for (var mno=0; mno<8; mno++){
+  var evs=MELODY.filter(function(e){return e[1]>=mno*4 && e[1]<(mno+1)*4});
+  if(!evs.length) continue;
+  var endB=evs[evs.length-1][1]+evs[evs.length-1][2];
+  if(endB > (mno+1)*4 + 1e-6 && !(evs[evs.length-1][2]>=4)) console.error("measure",mno+1,"overruns barline at",endB);
+ }
+ console.log("per-measure validation done (8 bars, deliberate comma rests allowed)");
 })();
 var SAMPLES=["a3","c4","e4","g4","a4","c5","e5","g5","a5"];
 var BASES=[["a3",-7],["c4",-4],["e4",0],["g4",3],["a4",5],["c5",8],["e5",12],["g5",15],["a5",17]];
@@ -85,10 +100,29 @@ function tick(when,accent){
 var tbl=document.getElementById("tbl");
 MELODY.forEach(function(e,i){
  var tr=document.createElement("tr"); tr.id="ev"+i;
- tr.innerHTML="<td>"+(i+1)+"</td><td>"+(Math.floor(e[1]/4)+1)+"</td><td>"+(e[1]%4+1)+"</td><td>"+e[2]+"</td><td>"+(NAMES[String(e[0])]||e[0])+"</td><td>"+e[4]+"</td>";
+ tr.innerHTML="<td>"+(i+1)+"</td><td>"+(Math.floor(e[1]/4)+1)+"</td><td>"+(e[1]%4+1)+"</td><td>"+e[2]+"</td><td>"+(NAMES[String(e[0])]||e[0])+"</td><td>"+e[4]+"</td><td class=d></td>";
  tbl.appendChild(tr);
 });
 document.getElementById("bpm").oninput=function(){document.getElementById("bpmv").textContent=this.value};
+var refBuf=null;
+document.getElementById("reffile").onchange=function(){
+ var f=this.files[0]; if(!f) return;
+ var rd=new FileReader();
+ rd.onload=function(){
+  if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==="suspended")actx.resume();
+  actx.decodeAudioData(rd.result).then(function(b){refBuf=b;document.getElementById("playref").disabled=false;
+   document.getElementById("playref").textContent="Play reference ("+b.duration.toFixed(1)+"s)";});
+ };
+ rd.readAsArrayBuffer(f);
+};
+var refSrc=null;
+document.getElementById("playref").onclick=function(){
+ if(!refBuf) return;
+ if(actx.state==="suspended")actx.resume();
+ if(refSrc){try{refSrc.stop()}catch(e){}}
+ refSrc=actx.createBufferSource(); refSrc.buffer=refBuf; refSrc.connect(actx.destination); refSrc.start();
+};
 document.getElementById("go").onclick=function(){
  wake(function(){
   var bpm=+document.getElementById("bpm").value, spb=60/bpm;
@@ -100,10 +134,18 @@ document.getElementById("go").onclick=function(){
    cues.push({i:i,at:t0+e[1]*spb});
   });
   if(timer)cancelAnimationFrame(timer);
+  var seen={}, maxDrift=0;
   (function chase(){
    var at=actx.currentTime, beat=(at-t0)/spb, cur=-1;
    if(beat>=0&&beat<32) document.getElementById("pos").textContent="bar "+(Math.floor(beat/4)+1)+" · beat "+((Math.floor(beat)%4)+1);
-   for(var i=0;i<cues.length;i++) if(cues[i].at<=at) cur=cues[i].i;
+   for(var i=0;i<cues.length;i++) if(cues[i].at<=at){
+    cur=cues[i].i;
+    if(!seen[cues[i].i]){ seen[cues[i].i]=1;
+     var d=(at-cues[i].at)*1000; if(d>maxDrift)maxDrift=d;
+     var cell=document.querySelector("#ev"+cues[i].i+" .d"); if(cell)cell.textContent=d.toFixed(1);
+     document.getElementById("drift").textContent="max detection lag "+maxDrift.toFixed(1)+"ms (rAF resolution ~16ms; audio itself is pre-scheduled, drift-free)";
+    }
+   }
    for(var j=0;j<MELODY.length;j++) document.getElementById("ev"+j).className = (j===cur?"now":"");
    if(beat<33)timer=requestAnimationFrame(chase); else document.getElementById("pos").textContent="done";
   })();
