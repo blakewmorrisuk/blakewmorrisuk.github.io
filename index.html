@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=37">
+    <link rel="stylesheet" href="style.css?v=38">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -43,18 +43,19 @@
 
     <script>
     /* Slow etching: faint gold hairlines strike the black and bleed
-       across it. For a brief window of each stroke a dim ember rides
-       the tip and spits a few tiny sparks that drift, fall, and die —
-       a welder's glimpse, not a comet. One line every few seconds, up
-       to a hundred; then the surface rests. Trails accumulate on
-       #etch; the ember and sparks ride #etch2, cleared each frame.
-       Timestamp-driven, so a backgrounded tab returns to find the
-       work continued. */
+       across it, studded at intervals with minuscule M's — dot-sized at
+       arm's length, monograms under a loupe. For a brief window of each
+       stroke a dim ember rides the tip and spits a few tiny sparks.
+       The active stroke renders whole on #etch2 (one pass, no alpha
+       stacking) and is stamped onto #etch only when it lands. Up to a
+       hundred lines; then the surface rests. Timestamp-driven, so a
+       backgrounded tab returns to find the work continued. */
     (function () {
       var c = document.getElementById("etch"), x = c.getContext("2d");
       var c2 = document.getElementById("etch2"), x2 = c2.getContext("2d");
       var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       var MAX = 100, BORN_EVERY = [3400, 6800], TAKES = [5200, 9800];
+      var GOLD = "201, 168, 92", EMBER = "196, 102, 54", EMBER_HI = "214, 126, 70";
       var lines = [], sparks = [], W, H, dpr, lastT = 0;
       function rand(a, b) { return a + Math.random() * (b - a); }
       function span() {
@@ -62,46 +63,56 @@
         var a = horiz ? rand(-0.22, 0.22) : rand(1.35, 1.79);
         var cx = rand(W * 0.1, W * 0.9), cy = rand(H * 0.08, H * 0.95);
         var L = Math.max(W, H) * 1.5, dx = Math.cos(a) * L, dy = Math.sin(a) * L;
-        return { x1: cx - dx, y1: cy - dy, x2: cx + dx, y2: cy + dy,
-                 alpha: rand(0.035, 0.075), born: 0, takes: rand(TAKES[0], TAKES[1]), done: 0,
-                 b0: rand(0.05, 0.63), bLen: rand(0.18, 0.32) };
+        var l = { x1: cx - dx, y1: cy - dy, x2: cx + dx, y2: cy + dy, len: 2 * L,
+                  alpha: rand(0.035, 0.075), born: 0, takes: rand(TAKES[0], TAKES[1]), done: 0,
+                  b0: rand(0.05, 0.63), bLen: rand(0.18, 0.32), studs: [] };
+        for (var d = rand(40, 130); d < l.len; d += rand(90, 150)) l.studs.push(d / l.len);
+        return l;
       }
       function size() {
         dpr = Math.min(devicePixelRatio || 1, 2);
         W = innerWidth; H = innerHeight;
         [c, c2].forEach(function (cv) { cv.width = W * dpr; cv.height = H * dpr; });
-        [x, x2].forEach(function (ctx) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.lineCap = "round"; });
-        x.lineWidth = 0.8;
-        lines.forEach(function (l) { seg(l, 0, l.done); });
+        [x, x2].forEach(function (ctx) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.lineCap = "butt"; });
+        lines.forEach(function (l) { if (l.done > 0) stamp(x, l, l.done); });
       }
       function at(l, t) { return [l.x1 + (l.x2 - l.x1) * t, l.y1 + (l.y2 - l.y1) * t]; }
-      function seg(l, from, to) {
-        if (to <= from) return;
-        var a = at(l, from), b = at(l, to);
-        x.strokeStyle = "rgba(201, 168, 92, " + l.alpha + ")";
-        x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke();
+      /* Draw a line from its start to progress t in ONE stroke, plus the
+         M studs the tip has already passed. Works on either canvas. */
+      function stamp(ctx, l, t) {
+        var a = at(l, 0), b = at(l, t);
+        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = "rgba(" + GOLD + ", " + l.alpha + ")";
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+        ctx.font = '4px "Cormorant Garamond", "EB Garamond", Georgia, serif';
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(" + GOLD + ", " + Math.min(0.16, l.alpha * 1.9) + ")";
+        for (var i = 0; i < l.studs.length; i++) {
+          if (l.studs[i] > t) break;
+          var s = at(l, l.studs[i]);
+          if (s[0] > -4 && s[0] < W + 4 && s[1] > -4 && s[1] < H + 4) ctx.fillText("M", s[0], s[1]);
+        }
       }
       function renderSparks(now, dt) {
         for (var i = sparks.length - 1; i >= 0; i--) {
           var s = sparks[i], age = now - s.born;
           if (age > s.life) { sparks.splice(i, 1); continue; }
           s.x += s.vx * dt / 1000; s.y += s.vy * dt / 1000;
-          s.vy += 26 * dt / 1000; // gentle fall
+          s.vy += 26 * dt / 1000;
           var k = 1 - age / s.life;
-          x2.fillStyle = "rgba(214, 126, 70, " + (s.a * k).toFixed(3) + ")";
+          x2.fillStyle = "rgba(" + EMBER_HI + ", " + (s.a * k).toFixed(3) + ")";
           x2.fillRect(s.x, s.y, 1.1, 1.1);
         }
       }
-      function burn(l, t, now, dt) {
-        x2.clearRect(0, 0, W, H);
+      function ember(l, t, now, dt) {
         var w = (t - l.b0) / l.bLen;
         if (w > 0 && w < 1) {
           var f = w < 0.25 ? w / 0.25 : (w > 0.75 ? (1 - w) / 0.25 : 1);
           var tip = at(l, t);
           var g = x2.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 7);
-          g.addColorStop(0, "rgba(214, 126, 70, " + 0.15 * f + ")");
-          g.addColorStop(0.5, "rgba(196, 102, 54, " + 0.06 * f + ")");
-          g.addColorStop(1, "rgba(196, 102, 54, 0)");
+          g.addColorStop(0, "rgba(" + EMBER_HI + ", " + 0.15 * f + ")");
+          g.addColorStop(0.5, "rgba(" + EMBER + ", " + 0.06 * f + ")");
+          g.addColorStop(1, "rgba(" + EMBER + ", 0)");
           x2.fillStyle = g;
           x2.beginPath(); x2.arc(tip[0], tip[1], 7, 0, 7); x2.fill();
           if (Math.random() < dt / 200 && sparks.length < 6) {
@@ -116,7 +127,7 @@
       }
       size(); addEventListener("resize", size);
       if (reduced) {
-        for (var i = 0; i < 30; i++) { var l = span(); l.done = 1; lines.push(l); seg(l, 0, 1); }
+        for (var i = 0; i < 30; i++) { var l = span(); l.done = 1; lines.push(l); stamp(x, l, 1); }
         return;
       }
       var active = null;
@@ -130,12 +141,19 @@
         var dt = Math.min(100, now - lastT); lastT = now;
         var p = Math.min(1, (now - active.born) / active.takes);
         var eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-        seg(active, active.done, eased); active.done = eased;
-        burn(active, eased, now, dt);
+        active.done = eased;
+        x2.clearRect(0, 0, W, H);
+        stamp(x2, active, eased);      // whole partial stroke, single pass
+        ember(active, eased, now, dt);
         if (p < 1) { requestAnimationFrame(grow); }
-        else { active = null; requestAnimationFrame(drain); setTimeout(birth, rand(BORN_EVERY[0], BORN_EVERY[1])); }
+        else {
+          stamp(x, active, 1);         // land it on the permanent field once
+          active = null;
+          requestAnimationFrame(drain);
+          setTimeout(birth, rand(BORN_EVERY[0], BORN_EVERY[1]));
+        }
       }
-      function drain(now) { // let leftover sparks die out after the line lands
+      function drain(now) {
         var dt = Math.min(100, now - lastT); lastT = now;
         x2.clearRect(0, 0, W, H);
         renderSparks(now, dt);
