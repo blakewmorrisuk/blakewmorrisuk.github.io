@@ -36,7 +36,17 @@ a { color: var(--amber); }
     z-index: 0;
     pointer-events: none;
 }
-.page--index { position: relative; z-index: 1; }
+.page--index {
+    position: relative;
+    z-index: 1;
+    transition: opacity 0.5s ease;
+}
+/* After 7 idle seconds the text steps aside for the etching; a hover
+   (or touch) brings it back for another 7. */
+.page--index.is-dimmed {
+    opacity: 0.07;
+    transition: opacity 2.4s ease;
+}
 
 /* Index layout: entry hangs off a gold hairline, no card box */
 .index-head { text-align: center; padding-top: 20px; }
@@ -98,12 +108,12 @@ a { color: var(--amber); }
     text-align: center;
 }
 
+/* Present, but nearly part of the dark — a fact, not a catchphrase */
 .eyebrow {
     font-family: var(--serif);
-    font-style: italic;
-    font-size: 15px;
-    letter-spacing: 0.03em;
-    color: var(--ink-soft);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: rgba(232, 228, 216, 0.13);
     margin-bottom: 16px;
 }
 
