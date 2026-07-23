@@ -64,25 +64,71 @@ a { color: var(--amber); }
 
 /* Index layout: entry hangs off a gold hairline, no card box */
 .index-head { text-align: center; padding-top: 20px; }
+/* The light-bar: the rule beneath the name is a dial. On arrival its
+   light sweeps left to right and the page's text materialises behind
+   the edge; grab the hairline and drag left and the same veil
+   withdraws until only the dark and the lines remain. Drag right to
+   relight. The sweep and the masks are driven from the script — one
+   value governs the bar's fill and every letter on the page. */
+.lightbar {
+    position: relative;
+    width: 140px;
+    height: 1px;
+    margin: 52px auto 56px;
+}
 .strike-rule {
+    position: absolute;
+    inset: 0;
     border: 0;
     height: 1px;
-    width: 140px;
-    margin: 52px auto 56px;
+    width: 100%;
+    margin: 0;
     background: linear-gradient(to right, transparent, var(--amber), transparent);
 }
-/* The rule is etched, not printed: on each arrival it draws itself once,
-   left to right, at the field's own unhurried pace — then never moves
-   again. */
-@media (prefers-reduced-motion: no-preference) {
-    .strike-rule {
-        animation: strike-in 2.2s cubic-bezier(0.45, 0, 0.55, 1) 0.5s backwards;
-    }
-    @keyframes strike-in {
-        from { clip-path: inset(0 100% 0 0); }
-        to { clip-path: inset(0 0 0 0); }
-    }
+/* generous invisible grab zone — the hairline itself is 1px */
+.lightbar-hit {
+    position: absolute;
+    left: -46px;
+    right: -46px;
+    top: -24px;
+    bottom: -24px;
+    z-index: 2;
+    cursor: grab;
+    touch-action: none;
+    outline: none;
 }
+.lightbar.lightbar-live .lightbar-hit { cursor: grabbing; }
+/* a whisper of the full rule while grabbed or sought — the track */
+.lightbar-ghost {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent, var(--amber), transparent);
+    opacity: 0;
+    transition: opacity .45s ease;
+    pointer-events: none;
+}
+.lightbar-hit:hover ~ .lightbar-ghost,
+.lightbar-hit:focus-visible ~ .lightbar-ghost { opacity: 0.14; }
+.lightbar.lightbar-live .lightbar-ghost { opacity: 0.2; }
+/* the small light that rides the boundary while it moves */
+.lightbar-tip {
+    position: absolute;
+    top: -13px;
+    left: 0;
+    width: 26px;
+    height: 26px;
+    margin-left: -13px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        rgba(224, 201, 146, 0.55),
+        rgba(224, 201, 146, 0.16) 45%,
+        rgba(201, 168, 92, 0) 72%);
+    opacity: 0;
+    transition: opacity .6s ease;
+    pointer-events: none;
+}
+.lightbar.lightbar-live .lightbar-tip,
+.lightbar.lightbar-glow .lightbar-tip { opacity: 1; }
 .entry {
     display: block;
     max-width: 470px;

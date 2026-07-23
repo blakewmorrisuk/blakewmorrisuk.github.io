@@ -19,7 +19,7 @@
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="fonts/cormorant-garamond-m.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=66">
+    <link rel="stylesheet" href="style.css?v=67">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -30,7 +30,15 @@
             <h1 class="name"><span class="name-left">Blake</span><span class="name-pivot">W<span class="name-period">.</span></span><span class="name-right">Morris</span></h1>
         </header>
 
-        <hr class="strike-rule">
+        <!-- The light-bar: the rule is a dial. Grab it and drag left and
+             the page's text follows the light out; drag right to relight. -->
+        <div class="lightbar" id="lightbar">
+            <div class="lightbar-hit" id="lightbar-hit" role="slider" tabindex="0" aria-label="Light"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"></div>
+            <div class="lightbar-ghost" aria-hidden="true"></div>
+            <hr class="strike-rule">
+            <div class="lightbar-tip" id="lightbar-tip" aria-hidden="true"></div>
+        </div>
 
         <section aria-label="Projects">
             <a class="entry" href="https://blakewmorrisuk.github.io/love-always-gene/">
@@ -61,8 +69,11 @@
        answers with a real bowed violin note (VSCO 2 CE solo violin,
        public domain, vendored in /audio like the fonts) — pitch by
        height across nine notes chosen so any strum stays consonant.
-       Samples load lazily on first touch, which also wakes audio as
-       browsers require. For a brief window of each
+       The field answers from the first drift of the pointer: crossings
+       glow at once, and the violin arms itself on first movement —
+       samples fetched, engine primed — sounding from the earliest
+       moment the browser permits (its law: only after a first tap,
+       click, or key press anywhere). For a brief window of each
        stroke a dim ember rides the tip and spits sparks. Lines are
        permanent and accumulate to a thousand, each crossing the field
        at its own pace. */
@@ -228,7 +239,7 @@
         }
       }
       /* ---- the strings: real violin, vendored ---------------------- */
-      var actx = null, master = null, wet = null, loading = false;
+      var actx = null, master = null, wet = null, loading = false, resumeWait = false;
       var SAMPLES = ["a3", "c4", "e4", "g4", "a4", "c5", "e5", "g5", "a5"];
       var buffers = new Array(SAMPLES.length);
       function wake() {
@@ -246,7 +257,14 @@
             wet.connect(conv); conv.connect(master);
           } catch (e) { return; }
         }
-        if (actx.state === "suspended") actx.resume();
+        /* resume() before the browser's first-gesture grant simply arms
+           it (Chrome resolves the promise at the first real gesture;
+           Safari rejects, so we retry on later events). */
+        if (actx.state === "suspended" && !resumeWait) {
+          resumeWait = true;
+          actx.resume().then(function () { resumeWait = false; },
+                             function () { resumeWait = false; });
+        }
         if (!loading) {
           loading = true;
           SAMPLES.forEach(function (n, i) {
@@ -328,7 +346,9 @@
             if (ddx * ddx + ddy * ddy < r2 && now - m.last > 650) {
               m.last = now;
               glows.push({ x: m.x, y: m.y, born: now, life: 700 + vel * 500 });
-              bow(noteFor(m.y), vel, m.chr, m.x);
+              /* only bow a running engine — notes queued on a suspended
+                 one would all land at once when it finally starts */
+              if (actx && actx.state === "running") bow(noteFor(m.y), vel, m.chr, m.x);
               kickIdle();
             }
           }
@@ -452,7 +472,8 @@
       });
       /* ------------------------------------------------------------- */
       addEventListener("pointerdown", function (e) { wake(); strum(e); }, { passive: true });
-      addEventListener("pointermove", function (e) { if (actx) strum(e); }, { passive: true });
+      addEventListener("pointermove", function (e) { wake(); strum(e); }, { passive: true });
+      addEventListener("keydown", function () { wake(); }, { passive: true });
       /* ------------------------------------------------------------- */
       size(); addEventListener("resize", size);
       var active = null;
@@ -475,10 +496,9 @@
           if (mk.s > eased) break;
           if (!mk.sounded) {
             mk.sounded = true;
-            if (actx) {
+            if (actx && actx.state === "running")
               bow(noteFor(mk.y), performing ? rand(0.45, 0.6) : rand(0.2, 0.36), mk.chr, mk.x);
-              glows.push({ x: mk.x, y: mk.y, born: now, life: 620 });
-            }
+            glows.push({ x: mk.x, y: mk.y, born: now, life: 620 });
             if (flares.length < 24) flares.push({ l1: active, l2: mk.o, born: now, life: 2400 });
           }
         }
@@ -510,6 +530,122 @@
       if (document.fonts && document.fonts.load) {
         document.fonts.load('500 17px "Cormorant Garamond"').catch(function () {}).then(begin);
       } else { begin(); }
+      /* ---- the light-bar: the rule is a dial ---------------------- */
+      /* One lamp, one boundary. A single value t (0..1) places a
+         vertical light-edge across the column; the bar fills where the
+         edge has passed it, and every governed element is masked with a
+         soft ~90px feather at the same edge, so text does not pop — it
+         materialises as the light crosses it. On arrival the lamp
+         performs the sweep itself (the give-away). Grab the hairline
+         and drag left and the veil withdraws until only the dark, the
+         lines and their lights remain; drag right to relight. Dragging
+         is deaf to the strings, like the fullscreen corner. Ends are
+         magnetic so a near-full drop settles clean. Keyboard: arrows
+         nudge, Enter performs the whole sweep either way. */
+      (function () {
+        var lbar = document.getElementById("lightbar");
+        if (!lbar) return;
+        var rule = lbar.querySelector(".strike-rule"),
+            tip = document.getElementById("lightbar-tip"),
+            hit = document.getElementById("lightbar-hit");
+        var FEATHER = 90;
+        var governed = [".index-head", ".entry", ".m-mark"].map(function (s) {
+          return document.querySelector(s);
+        }).filter(Boolean);
+        var t = 1, span = { L: 0, R: 1 };
+        function measure() {
+          var r = (document.querySelector(".entry") || lbar).getBoundingClientRect();
+          span = { L: r.left + scrollX - 30, R: r.right + scrollX + 30 };
+        }
+        function apply() {
+          var p = span.L + (span.R - span.L) * t;
+          var br = lbar.getBoundingClientRect(), bl = br.left + scrollX, bw = br.width || 1;
+          if (t >= 0.9999) { rule.style.clipPath = ""; }
+          else {
+            var fill = Math.max(0, Math.min(1, (p - bl) / bw));
+            rule.style.clipPath = "inset(0 " + ((1 - fill) * 100).toFixed(2) + "% 0 0)";
+          }
+          for (var i = 0; i < governed.length; i++) {
+            var el = governed[i];
+            if (t >= 0.9999) {
+              el.style.webkitMaskImage = el.style.maskImage = "";
+              el.style.pointerEvents = "";
+            } else {
+              var lx = el.getBoundingClientRect().left + scrollX;
+              var g = "linear-gradient(to right, #000 " + (p - FEATHER - lx).toFixed(1) +
+                      "px, rgba(0,0,0,0) " + (p - lx).toFixed(1) + "px)";
+              el.style.webkitMaskImage = g;
+              el.style.maskImage = g;
+              /* ghost text must not catch clicks */
+              el.style.pointerEvents = t < 0.05 ? "none" : "";
+            }
+          }
+          tip.style.left = Math.max(-6, Math.min(bw + 6, p - bl)) + "px";
+          hit.setAttribute("aria-valuenow", String(Math.round(t * 100)));
+        }
+        function ease(p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
+        var anim = 0;
+        function animateTo(target, dur, delay) {
+          var from = t, t0 = null, id = ++anim;
+          lbar.classList.add("lightbar-glow");
+          function step(now) {
+            if (id !== anim) return;
+            if (t0 === null) t0 = now + (delay || 0);
+            var p = (now - t0) / dur;
+            if (p < 0) { requestAnimationFrame(step); return; }
+            p = Math.min(1, p);
+            t = from + (target - from) * ease(p);
+            apply();
+            if (p < 1) { requestAnimationFrame(step); }
+            else { lbar.classList.remove("lightbar-glow"); }
+          }
+          requestAnimationFrame(step);
+        }
+        var dragging = false, grabX = 0, grabT = 0;
+        ["pointerdown", "pointermove"].forEach(function (ty) {
+          hit.addEventListener(ty, function (e) { e.stopPropagation(); });
+        });
+        hit.addEventListener("pointerdown", function (e) {
+          wake();
+          anim++;
+          lbar.classList.remove("lightbar-glow");
+          dragging = true; measure();
+          grabX = e.clientX; grabT = t;
+          lbar.classList.add("lightbar-live");
+          try { hit.setPointerCapture(e.pointerId); } catch (err) {}
+          e.preventDefault();
+        });
+        hit.addEventListener("pointermove", function (e) {
+          if (!dragging) return;
+          t = Math.max(0, Math.min(1, grabT + (e.clientX - grabX) / (span.R - span.L)));
+          apply();
+        });
+        function drop() {
+          if (!dragging) return;
+          dragging = false;
+          lbar.classList.remove("lightbar-live");
+          if (t > 0.96 && t < 1) { animateTo(1, 350); }
+          else if (t < 0.04 && t > 0) { animateTo(0, 350); }
+        }
+        hit.addEventListener("pointerup", drop);
+        hit.addEventListener("pointercancel", drop);
+        hit.addEventListener("keydown", function (e) {
+          var nudge = e.key === "ArrowLeft" ? -0.06 : e.key === "ArrowRight" ? 0.06 : null;
+          if (nudge !== null) {
+            anim++; measure();
+            t = Math.max(0, Math.min(1, t + nudge)); apply();
+          } else if (e.key === "Enter" || e.key === " ") {
+            measure(); animateTo(t < 0.5 ? 1 : 0, 1600);
+          } else if (e.key === "Home") { measure(); animateTo(0, 900); }
+          else if (e.key === "End") { measure(); animateTo(1, 900); }
+          else { return; }
+          e.preventDefault();
+        });
+        addEventListener("resize", function () { measure(); apply(); });
+        measure();
+        if (reduced) { apply(); }
+        else { t = 0; apply(); animateTo(1, 2200, 500); }
+      })();
     })();
     </script>
 </body>
