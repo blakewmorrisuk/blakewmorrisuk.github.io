@@ -336,6 +336,54 @@ h1.name .name-period {
     .project-quote { margin-left: 1.25em; }
 }
 
+/* Hidden fullscreen control. The zone is an invisible corner hot spot;
+   the glyph inside — four hairline corner brackets — appears only while
+   the pointer (or a finger) rests there, and hides again after use.
+   If you don't know it's there, it isn't. */
+.fs-zone {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    width: 96px;
+    height: 96px;
+    z-index: 2;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 0 18px 18px 0;
+}
+.fs-btn {
+    width: 34px;
+    aspect-ratio: 1;
+    padding: 7px;
+    background: none;
+    border: 0;
+    color: rgba(201, 168, 92, 0.38);
+    opacity: 0;
+    pointer-events: none;
+    cursor: pointer;
+    transition: opacity .5s ease, color .3s ease;
+}
+.fs-zone:hover .fs-btn,
+.fs-zone.fs-show .fs-btn,
+.fs-btn:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+/* After a click it withdraws even under the cursor; leaving and
+   returning brings it back. */
+.fs-zone.fs-used .fs-btn { opacity: 0; pointer-events: none; }
+.fs-btn:hover { color: rgba(224, 201, 146, 0.6); }
+.fs-btn:focus-visible { outline: none; color: rgba(224, 201, 146, 0.6); }
+.fs-btn svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.1;
+}
+
 ::selection {
     background: rgba(201, 168, 92, 0.28);
 }

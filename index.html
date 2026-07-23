@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=64">
+    <link rel="stylesheet" href="style.css?v=65">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -41,6 +41,16 @@
         <button class="m-mark" id="m-play" aria-label="Play the lines">M</button>
     </main>
 
+    <!-- Hidden fullscreen control: lives in the bottom-right corner and
+         only shows itself if you already know to look there. -->
+    <div class="fs-zone" id="fs-zone">
+        <button class="fs-btn" id="fs-btn" aria-label="Toggle full screen">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>
+            </svg>
+        </button>
+    </div>
+
     <script>
     /* Slow etching: faint gold hairlines strike the black and bleed
        across it. Where two lines cross, a minuscule M hides in the
@@ -54,6 +64,38 @@
        stroke a dim ember rides the tip and spits sparks. Lines are
        permanent and accumulate to a thousand, each crossing the field
        at its own pace. */
+    (function () {
+      /* Fullscreen corner. Removed outright where the API doesn't exist
+         (iPhones), so it never sits there doing nothing. Pointer events
+         inside the zone stop before they reach the string field — the
+         corner is silent. */
+      var zone = document.getElementById("fs-zone"), btn = document.getElementById("fs-btn");
+      if (!zone) return;
+      var root = document.documentElement;
+      if (!root.requestFullscreen && !root.webkitRequestFullscreen) { zone.remove(); return; }
+      ["pointerdown", "pointermove"].forEach(function (t) {
+        zone.addEventListener(t, function (e) { e.stopPropagation(); });
+      });
+      zone.addEventListener("pointerdown", function (e) {
+        /* Touch: the first tap only reveals the glyph (the button is
+           inert while hidden); the second tap presses it. */
+        if (e.pointerType !== "mouse") zone.classList.add("fs-show");
+      });
+      zone.addEventListener("pointerleave", function () {
+        zone.classList.remove("fs-used", "fs-show");
+      });
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var d = document;
+        if (d.fullscreenElement || d.webkitFullscreenElement) {
+          (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+        } else {
+          (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+        }
+        zone.classList.add("fs-used");
+        zone.classList.remove("fs-show");
+      });
+    })();
     (function () {
       var c = document.getElementById("etch"), x = c.getContext("2d");
       var c2 = document.getElementById("etch2"), x2 = c2.getContext("2d");
