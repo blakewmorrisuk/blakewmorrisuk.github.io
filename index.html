@@ -17,12 +17,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=61">
+    <link rel="stylesheet" href="style.css?v=62">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
     <canvas id="etch2" aria-hidden="true"></canvas>
-    <div id="pulse" aria-hidden="true"></div>
     <main class="page page--index">
         <header class="index-head">
             <div class="eyebrow">§ Not Law Stuff</div>
@@ -88,7 +87,7 @@
       var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       var MAX = 1000, BORN_EVERY = [3400, 6800], TAKES = [4000, 12500];
       var GOLD = "201, 168, 92", EMBER = "196, 102, 54", EMBER_HI = "214, 126, 70";
-      var lines = [], sparks = [], glows = [], W, H, dpr, lastT = 0;
+      var lines = [], sparks = [], glows = [], flares = [], W, H, dpr, lastT = 0;
       function rand(a, b) { return a + Math.random() * (b - a); }
       function span() {
         var horiz = Math.random() < 0.58;
@@ -112,7 +111,7 @@
           if (s <= 0.001 || s >= 0.999 || u <= 0.001 || u >= 0.999) continue;
           var px = nl.x1 + d1x * s, py = nl.y1 + d1y * s;
           if (px < -4 || px > W + 4 || py < -4 || py > H + 4) continue;
-          out.push({ s: s, x: px, y: py, a: Math.min(0.13, nl.alpha + o.alpha), last: 0, chr: rand(0.8, 1.15) });
+          out.push({ s: s, x: px, y: py, a: Math.min(0.13, nl.alpha + o.alpha), last: 0, chr: rand(0.8, 1.15), o: o });
         }
         out.sort(function (a, b) { return a.s - b.s; });
         return out;
@@ -158,6 +157,22 @@
           var k = 1 - age / s.life;
           x2.fillStyle = "rgba(" + EMBER_HI + ", " + (s.a * k).toFixed(3) + ")";
           x2.fillRect(s.x, s.y, 1.1, 1.1);
+        }
+      }
+      /* When two lines connect, both flare — the whole wire brightens a
+         touch and cools over ~2.4s, outliving the ember at the junction. */
+      function renderFlares(now) {
+        for (var i = flares.length - 1; i >= 0; i--) {
+          var f = flares[i], age = now - f.born;
+          if (age > f.life) { flares.splice(i, 1); continue; }
+          var k = Math.pow(1 - age / f.life, 2);
+          [f.l1, f.l2].forEach(function (ln) {
+            if (!ln) return;
+            var a = at(ln, 0), b = at(ln, ln.done || 1);
+            x2.lineWidth = 0.8;
+            x2.strokeStyle = "rgba(" + GOLD + ", " + (ln.alpha * 1.2 * k).toFixed(4) + ")";
+            x2.beginPath(); x2.moveTo(a[0], a[1]); x2.lineTo(b[0], b[1]); x2.stroke();
+          });
         }
       }
       function renderGlows(now) {
@@ -266,8 +281,9 @@
       function idle(now) {
         var dt = Math.min(100, now - lastT); lastT = now;
         x2.clearRect(0, 0, W, H);
+        renderFlares(now);
         renderSparks(now, dt); renderGlows(now);
-        if ((sparks.length || glows.length) && !active) requestAnimationFrame(idle);
+        if ((sparks.length || glows.length || flares.length) && !active) requestAnimationFrame(idle);
         else { idling = false; if (!active) x2.clearRect(0, 0, W, H); }
       }
       function kickIdle() {
@@ -449,9 +465,11 @@
               bow(noteFor(mk.y), performing ? rand(0.45, 0.6) : rand(0.2, 0.36), mk.chr, mk.x);
               glows.push({ x: mk.x, y: mk.y, born: now, life: 620 });
             }
+            if (flares.length < 24) flares.push({ l1: active, l2: mk.o, born: now, life: 2400 });
           }
         }
         x2.clearRect(0, 0, W, H);
+        renderFlares(now);
         stamp(x2, active, eased);
         ember(active, eased, now, dt);
         renderSparks(now, dt); renderGlows(now);

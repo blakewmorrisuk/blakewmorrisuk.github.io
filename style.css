@@ -44,35 +44,6 @@ body.text-dimmed #etch, body.text-dimmed #etch2 {
     transition: filter 2.4s ease;
 }
 
-/* A rare warm breath: a faint ember band sweeps top to bottom about
-   once every 75 seconds. Overlay blending leaves pure black untouched,
-   so the pulse reveals itself only where lines already burn. */
-#pulse {
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 34vh;
-    z-index: 0;
-    pointer-events: none;
-    mix-blend-mode: overlay;
-    background: linear-gradient(to bottom,
-        transparent,
-        rgba(214, 126, 70, 0.55) 50%,
-        transparent);
-    transform: translateY(-40vh);
-    animation: pulse-sweep 75s linear infinite;
-    animation-delay: -1s;
-}
-@keyframes pulse-sweep {
-    0%   { transform: translateY(-40vh); }
-    9%   { transform: translateY(140vh); }
-    100% { transform: translateY(140vh); }
-}
-@media (prefers-reduced-motion: reduce) {
-    #pulse { animation: none; transform: translateY(-40vh); }
-}
-
 /* As the letters sleep, the M wakes a little */
 body.text-dimmed .m-mark {
     border-color: rgba(201, 168, 92, 0.38);
