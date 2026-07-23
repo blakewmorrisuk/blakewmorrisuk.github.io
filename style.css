@@ -46,11 +46,12 @@ body.text-dimmed #etch, body.text-dimmed #etch2 {
 .page--index {
     position: relative;
     z-index: 1;
-    transition: opacity 0.5s ease;
 }
 /* After 7 idle seconds the text steps aside for the etching; a hover
-   (or touch) brings it back for another 7. */
-.page--index.is-dimmed {
+   (or touch) brings it back for another 7. The M plaque is exempt —
+   the mark keeps its post while the words sleep. */
+.page--index > * { transition: opacity 0.5s ease; }
+.page--index.is-dimmed > :not(.m-mark) {
     opacity: 0.07;
     transition: opacity 2.4s ease;
 }
