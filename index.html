@@ -19,7 +19,7 @@
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="fonts/cormorant-garamond-m.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=67">
+    <link rel="stylesheet" href="style.css?v=68">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -531,17 +531,19 @@
         document.fonts.load('500 17px "Cormorant Garamond"').catch(function () {}).then(begin);
       } else { begin(); }
       /* ---- the light-bar: the rule is a dial ---------------------- */
-      /* One lamp, one boundary. A single value t (0..1) places a
-         vertical light-edge across the column; the bar fills where the
-         edge has passed it, and every governed element is masked with a
-         soft ~90px feather at the same edge, so text does not pop — it
-         materialises as the light crosses it. On arrival the lamp
-         performs the sweep itself (the give-away). Grab the hairline
-         and drag left and the veil withdraws until only the dark, the
-         lines and their lights remain; drag right to relight. Dragging
-         is deaf to the strings, like the fullscreen corner. Ends are
-         magnetic so a near-full drop settles clean. Keyboard: arrows
-         nudge, Enter performs the whole sweep either way. */
+      /* One value t (0..1) governs everything in proportion. The bar is
+         a true gauge: its fill IS t, the tip-light is its needle, and a
+         drag across the bar's own length is the full throw. The same t
+         places a soft-edged light boundary across the wider column, and
+         every governed element is masked against it — text materialises
+         where the light has passed, in step with the gauge. The arrival
+         is an overture in phases: stillness; the lamp breathes in at
+         the left end with the whole track foretold at a whisper; a long
+         unhurried travel; a held beat; the light exhales. Grab the
+         hairline and drag left and the veil withdraws until only the
+         dark and the lines remain; right relights. Dragging is deaf to
+         the strings, like the fullscreen corner. Ends are magnetic.
+         Keyboard: arrows nudge, Enter performs the sweep either way. */
       (function () {
         var lbar = document.getElementById("lightbar");
         if (!lbar) return;
@@ -559,12 +561,9 @@
         }
         function apply() {
           var p = span.L + (span.R - span.L) * t;
-          var br = lbar.getBoundingClientRect(), bl = br.left + scrollX, bw = br.width || 1;
+          var bw = lbar.getBoundingClientRect().width || 1;
           if (t >= 0.9999) { rule.style.clipPath = ""; }
-          else {
-            var fill = Math.max(0, Math.min(1, (p - bl) / bw));
-            rule.style.clipPath = "inset(0 " + ((1 - fill) * 100).toFixed(2) + "% 0 0)";
-          }
+          else { rule.style.clipPath = "inset(0 " + ((1 - t) * 100).toFixed(2) + "% 0 0)"; }
           for (var i = 0; i < governed.length; i++) {
             var el = governed[i];
             if (t >= 0.9999) {
@@ -580,36 +579,37 @@
               el.style.pointerEvents = t < 0.05 ? "none" : "";
             }
           }
-          tip.style.left = Math.max(-6, Math.min(bw + 6, p - bl)) + "px";
+          tip.style.left = (t * bw).toFixed(1) + "px";
           hit.setAttribute("aria-valuenow", String(Math.round(t * 100)));
         }
         function ease(p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
+        function easeSlow(p) { return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; }
         var anim = 0;
-        function animateTo(target, dur, delay) {
+        function animateTo(target, dur, fn, hold) {
           var from = t, t0 = null, id = ++anim;
           lbar.classList.add("lightbar-glow");
           function step(now) {
             if (id !== anim) return;
-            if (t0 === null) t0 = now + (delay || 0);
-            var p = (now - t0) / dur;
-            if (p < 0) { requestAnimationFrame(step); return; }
-            p = Math.min(1, p);
-            t = from + (target - from) * ease(p);
+            if (t0 === null) t0 = now;
+            var p = Math.min(1, (now - t0) / dur);
+            t = from + (target - from) * (fn || ease)(p);
             apply();
             if (p < 1) { requestAnimationFrame(step); }
-            else { lbar.classList.remove("lightbar-glow"); }
+            else if (!hold) { lbar.classList.remove("lightbar-glow"); }
           }
           requestAnimationFrame(step);
         }
-        var dragging = false, grabX = 0, grabT = 0;
+        var dragging = false, grabX = 0, grabT = 0, barW = 140;
         ["pointerdown", "pointermove"].forEach(function (ty) {
           hit.addEventListener(ty, function (e) { e.stopPropagation(); });
         });
         hit.addEventListener("pointerdown", function (e) {
           wake();
           anim++;
+          cancelOverture();
           lbar.classList.remove("lightbar-glow");
           dragging = true; measure();
+          barW = lbar.getBoundingClientRect().width || 140;
           grabX = e.clientX; grabT = t;
           lbar.classList.add("lightbar-live");
           try { hit.setPointerCapture(e.pointerId); } catch (err) {}
@@ -617,7 +617,7 @@
         });
         hit.addEventListener("pointermove", function (e) {
           if (!dragging) return;
-          t = Math.max(0, Math.min(1, grabT + (e.clientX - grabX) / (span.R - span.L)));
+          t = Math.max(0, Math.min(1, grabT + (e.clientX - grabX) / barW));
           apply();
         });
         function drop() {
@@ -632,19 +632,44 @@
         hit.addEventListener("keydown", function (e) {
           var nudge = e.key === "ArrowLeft" ? -0.06 : e.key === "ArrowRight" ? 0.06 : null;
           if (nudge !== null) {
-            anim++; measure();
+            anim++; cancelOverture(); measure();
             t = Math.max(0, Math.min(1, t + nudge)); apply();
           } else if (e.key === "Enter" || e.key === " ") {
-            measure(); animateTo(t < 0.5 ? 1 : 0, 1600);
-          } else if (e.key === "Home") { measure(); animateTo(0, 900); }
-          else if (e.key === "End") { measure(); animateTo(1, 900); }
+            cancelOverture(); measure(); animateTo(t < 0.5 ? 1 : 0, 2200, easeSlow);
+          } else if (e.key === "Home") { cancelOverture(); measure(); animateTo(0, 1100, easeSlow); }
+          else if (e.key === "End") { cancelOverture(); measure(); animateTo(1, 1100, easeSlow); }
           else { return; }
           e.preventDefault();
         });
         addEventListener("resize", function () { measure(); apply(); });
+        var overture = [];
+        function cancelOverture() {
+          while (overture.length) clearTimeout(overture.pop());
+          lbar.classList.remove("lightbar-dawn");
+        }
         measure();
         if (reduced) { apply(); }
-        else { t = 0; apply(); animateTo(1, 2200, 500); }
+        else {
+          /* the arrival: darkness holds; at 0.85s the lamp breathes in
+             at the left end and the whole track shows at a whisper; at
+             1.55s the light travels, slow into motion and slow out of
+             it, for 3.6s; it rests lit a moment at the far end, then
+             exhales. Any grab or key cancels the performance and hands
+             the dial over mid-phrase. */
+          t = 0; apply();
+          overture.push(setTimeout(function () {
+            lbar.classList.add("lightbar-dawn", "lightbar-glow");
+          }, 850));
+          overture.push(setTimeout(function () {
+            animateTo(1, 3600, easeSlow, true);
+          }, 1550));
+          overture.push(setTimeout(function () {
+            lbar.classList.remove("lightbar-glow");
+          }, 5750));
+          overture.push(setTimeout(function () {
+            lbar.classList.remove("lightbar-dawn");
+          }, 7300));
+        }
       })();
     })();
     </script>
