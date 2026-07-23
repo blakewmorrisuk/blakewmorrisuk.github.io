@@ -35,33 +35,10 @@ a { color: var(--amber); }
     height: 100vh;
     z-index: 0;
     pointer-events: none;
-    transition: filter 0.5s ease;
-}
-/* When the text yields, the lights come up on the field — same slow
-   exhale out, same quick return. */
-body.text-dimmed #etch, body.text-dimmed #etch2 {
-    filter: brightness(2.2);
-    transition: filter 2.4s ease;
-}
-
-/* As the letters sleep, the M wakes a little */
-body.text-dimmed .m-mark {
-    border-color: rgba(201, 168, 92, 0.38);
-    color: rgba(224, 201, 146, 0.55);
-    text-shadow: 0 0 14px rgba(201, 168, 92, 0.35);
-    transition: border-color 2.4s ease, color 2.4s ease, text-shadow 2.4s ease;
 }
 .page--index {
     position: relative;
     z-index: 1;
-}
-/* After 7 idle seconds the text steps aside for the etching; a hover
-   (or touch) brings it back for another 7. The M plaque is exempt —
-   the mark keeps its post while the words sleep. */
-.page--index > * { transition: opacity 0.5s ease; }
-.page--index.is-dimmed > :not(.m-mark) {
-    opacity: 0.85;
-    transition: opacity 2.4s ease;
 }
 
 /* Index layout: entry hangs off a gold hairline, no card box */

@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=62">
+    <link rel="stylesheet" href="style.css?v=63">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -40,33 +40,6 @@
 
         <button class="m-mark" id="m-play" aria-label="Play the lines">M</button>
     </main>
-
-    <script>
-    /* The text yields to the field: after 7 idle seconds the page copy
-       fades nearly out. Only the cursor passing over the text itself
-       (or a tap on it) recalls it — wandering the field leaves the
-       words asleep. The M is not a waker; it has its own duties. */
-    (function () {
-      var main = document.querySelector(".page--index"), t = null;
-      function arm() {
-        main.classList.remove("is-dimmed");
-        document.body.classList.remove("text-dimmed");
-        if (t) clearTimeout(t);
-        t = setTimeout(function () {
-          main.classList.add("is-dimmed");
-          document.body.classList.add("text-dimmed");
-        }, 7000);
-      }
-      [".index-head", ".strike-rule", ".entry"].forEach(function (sel) {
-        var el = document.querySelector(sel);
-        if (!el) return;
-        ["pointerenter", "pointermove", "pointerdown"].forEach(function (ev) {
-          el.addEventListener(ev, arm, { passive: true });
-        });
-      });
-      arm();
-    })();
-    </script>
 
     <script>
     /* Slow etching: faint gold hairlines strike the black and bleed
