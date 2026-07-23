@@ -1,3 +1,16 @@
+/* The maker's letter, self-hosted: Cormorant Garamond 500 subset to the
+   single glyph it draws — M — about 1KB, taken from the letters site's
+   own vendored copy (SIL Open Font License). The page loads no
+   third-party origins. The 400–500 weight range lets the canvas's
+   default-weight lookup and the plaque's 500 both resolve here. */
+@font-face {
+    font-family: "Cormorant Garamond";
+    font-style: normal;
+    font-weight: 400 500;
+    font-display: block;
+    src: url(fonts/cormorant-garamond-m.woff2) format("woff2");
+}
+
 :root {
     --bg: #0a0a0b;
     --paper: #121213;
@@ -12,7 +25,15 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+    -webkit-text-size-adjust: 100%;
+    /* If the browser ever summons its own chrome here (a scrollbar on a
+       short screen), it appears dark with a gold hairline thumb — never
+       in default grey. */
+    color-scheme: dark;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201, 168, 92, 0.25) transparent;
+}
 
 body {
     background: var(--bg);
@@ -49,6 +70,18 @@ a { color: var(--amber); }
     width: 140px;
     margin: 52px auto 56px;
     background: linear-gradient(to right, transparent, var(--amber), transparent);
+}
+/* The rule is etched, not printed: on each arrival it draws itself once,
+   left to right, at the field's own unhurried pace — then never moves
+   again. */
+@media (prefers-reduced-motion: no-preference) {
+    .strike-rule {
+        animation: strike-in 2.2s cubic-bezier(0.45, 0, 0.55, 1) 0.5s backwards;
+    }
+    @keyframes strike-in {
+        from { clip-path: inset(0 100% 0 0); }
+        to { clip-path: inset(0 0 0 0); }
+    }
 }
 .entry {
     display: block;

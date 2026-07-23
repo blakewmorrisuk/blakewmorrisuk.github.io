@@ -1,4 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#1a2532"/>
-  <text x="32" y="47" font-family="Iowan Old Style, Charter, Palatino Linotype, Palatino, Georgia, serif" font-size="46" font-weight="400" text-anchor="middle" fill="#e3e0d6">M</text>
+  <!-- The M plaque, in the site's livery: black lacquer, hairline gold
+       border, the M carried as a real outline (Cormorant Garamond 500,
+       SIL OFL) so it renders identically everywhere. -->
+  <rect width="64" height="64" fill="#0a0a0b"/>
+  <rect x="5.25" y="5.25" width="53.5" height="53.5" fill="none" stroke="#c9a85c" stroke-opacity="0.6" stroke-width="2.5" rx="3"/>
+  <path fill="#e0c992" transform="translate(16.02 43.75) scale(0.0376 -0.0376)" d="M120 104 130 602 152 600 143 104Q142 53 159.5 32.5Q177 12 227 12Q229 12 229.0 6.0Q229 0 227 0Q205 0 181.5 1.0Q158 2 130 2Q106 2 84.0 1.0Q62 0 42 0Q40 0 40.0 6.0Q40 12 42 12Q84 12 101.5 32.5Q119 53 120 104ZM807 12Q810 12 810.0 6.0Q810 0 807 0Q783 0 753.5 1.0Q724 2 691 2Q660 2 634.0 1.0Q608 0 587 0Q585 0 585.0 6.0Q585 12 587 12Q637 12 651.5 25.0Q666 38 664 81L646 574L675 611L413 7Q412 3 405.0 3.0Q398 3 396 7L152 542Q120 613 49 613Q47 613 47.0 619.0Q47 625 49 625Q64 625 81.0 624.0Q98 623 109 623Q123 623 135.0 624.0Q147 625 153 625Q167 625 175.0 616.0Q183 607 199 573L428 78L402 36L648 600Q653 611 661.5 618.0Q670 625 678 625Q683 625 693.0 624.0Q703 623 716 623Q742 623 758.0 624.0Q774 625 792 625Q794 625 794.0 619.0Q794 613 792 613Q743 613 720.0 600.5Q697 588 698 546L717 81Q718 52 724.5 37.0Q731 22 750.0 17.0Q769 12 807 12Z"/>
 </svg>

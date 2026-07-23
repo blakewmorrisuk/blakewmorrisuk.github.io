@@ -10,14 +10,16 @@
     <meta property="og:title" content="Blake Morris">
     <meta property="og:description" content="Personal projects from Blake Morris. Things being built outside of law school.">
     <meta property="og:url" content="https://blakewmorrisuk.github.io/">
+    <meta property="og:image" content="https://blakewmorrisuk.github.io/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="A small gold M plaque etched on a black field.">
     <meta name="twitter:card" content="summary">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=65">
+    <link rel="preload" href="fonts/cormorant-garamond-m.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="style.css?v=66">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -453,10 +455,6 @@
       addEventListener("pointermove", function (e) { if (actx) strum(e); }, { passive: true });
       /* ------------------------------------------------------------- */
       size(); addEventListener("resize", size);
-      if (reduced) {
-        for (var i = 0; i < 30; i++) { var l = span(); l.marks = crossings(l); l.done = 1; lines.push(l); stamp(x, l, 1); }
-        return;
-      }
       var active = null;
       function birth() {
         if (lines.length >= MAX) return;
@@ -499,7 +497,19 @@
           setTimeout(birth, rand(BORN_EVERY[0], BORN_EVERY[1]));
         }
       }
-      setTimeout(birth, rand(2200, 4200));
+      /* Nothing is stamped until the engraving face has arrived, so every
+         M in the plate is cut with the same blade. The face is local and
+         ~1KB; the promise resolves even if it somehow fails. */
+      function begin() {
+        if (reduced) {
+          for (var i = 0; i < 30; i++) { var l = span(); l.marks = crossings(l); l.done = 1; lines.push(l); stamp(x, l, 1); }
+          return;
+        }
+        setTimeout(birth, rand(2200, 4200));
+      }
+      if (document.fonts && document.fonts.load) {
+        document.fonts.load('500 17px "Cormorant Garamond"').catch(function () {}).then(begin);
+      } else { begin(); }
     })();
     </script>
 </body>
