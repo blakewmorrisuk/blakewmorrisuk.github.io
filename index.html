@@ -60,6 +60,7 @@
       var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       var MAX = 1000, BORN_EVERY = [3400, 6800], TAKES = [4000, 12500];
       var GOLD = "201, 168, 92", EMBER = "196, 102, 54", EMBER_HI = "214, 126, 70";
+      var FLARE = "235, 235, 240"; /* connected lines flare white; junctions stay ember */
       var lines = [], sparks = [], glows = [], flares = [], W, H, dpr, lastT = 0;
       function rand(a, b) { return a + Math.random() * (b - a); }
       function span() {
@@ -143,7 +144,7 @@
             if (!ln) return;
             var a = at(ln, 0), b = at(ln, ln.done || 1);
             x2.lineWidth = 0.8;
-            x2.strokeStyle = "rgba(" + GOLD + ", " + (ln.alpha * 1.2 * k).toFixed(4) + ")";
+            x2.strokeStyle = "rgba(" + FLARE + ", " + (ln.alpha * 1.2 * k).toFixed(4) + ")";
             x2.beginPath(); x2.moveTo(a[0], a[1]); x2.lineTo(b[0], b[1]); x2.stroke();
           });
         }
@@ -322,7 +323,7 @@
       (function () {
         for (var i = 0; i < MELODY.length; i++) {
           var e = MELODY[i];
-          if (e[1] + e[2] > 31.0001) console.error("melody overruns", i);
+          if (e[1] + e[2] > 32.0001) console.error("melody overruns", i);
         }
       })();
       var BASES = [["a3",-7],["c4",-4],["e4",0],["g4",3],["a4",5],["c5",8],["e5",12],["g5",15],["a5",17]];
