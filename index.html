@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=57">
+    <link rel="stylesheet" href="style.css?v=58">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -43,8 +43,9 @@
 
     <script>
     /* The text yields to the field: after 7 idle seconds the page copy
-       fades nearly out; pointer or touch over it brings it back for
-       another 7. */
+       fades nearly out. Only the cursor passing over the text itself
+       (or a tap on it) recalls it — wandering the field leaves the
+       words asleep. The M is not a waker; it has its own duties. */
     (function () {
       var main = document.querySelector(".page--index"), t = null;
       function arm() {
@@ -56,8 +57,12 @@
           document.body.classList.add("text-dimmed");
         }, 7000);
       }
-      ["pointerenter", "pointermove", "pointerdown"].forEach(function (ev) {
-        main.addEventListener(ev, arm, { passive: true });
+      [".index-head", ".strike-rule", ".entry"].forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (!el) return;
+        ["pointerenter", "pointermove", "pointerdown"].forEach(function (ev) {
+          el.addEventListener(ev, arm, { passive: true });
+        });
       });
       arm();
     })();
