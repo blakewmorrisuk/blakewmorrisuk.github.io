@@ -82,6 +82,13 @@ a { color: var(--amber); }
     hyphens: auto;
     -webkit-hyphens: auto;
 }
+/* Above phone widths the card is a fixed 445px, so the wrap is
+   deterministic: the copy fills exactly four lines and the last one is
+   ~92% full. Justifying it too closes the block into a clean rectangle.
+   On narrow screens the wrap varies, so the last line stays natural. */
+@media (min-width: 530px) {
+    .entry-desc { text-align-last: justify; }
+}
 
 .page {
     max-width: 960px;
