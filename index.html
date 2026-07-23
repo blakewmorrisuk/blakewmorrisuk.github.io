@@ -17,11 +17,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=60">
+    <link rel="stylesheet" href="style.css?v=61">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
     <canvas id="etch2" aria-hidden="true"></canvas>
+    <div id="pulse" aria-hidden="true"></div>
     <main class="page page--index">
         <header class="index-head">
             <div class="eyebrow">§ Not Law Stuff</div>
@@ -165,15 +166,10 @@
           if (age > gl.life) { glows.splice(i, 1); continue; }
           var k = age < 120 ? age / 120 : 1 - (age - 120) / (gl.life - 120);
           var g = x2.createRadialGradient(gl.x, gl.y, 0, gl.x, gl.y, 11);
-          if (gl.amber) { /* a crossing's birth glows amber — the rule's own color */
-            g.addColorStop(0, "rgba(" + GOLD + ", " + (0.34 * k).toFixed(3) + ")");
-            g.addColorStop(0.55, "rgba(" + GOLD + ", " + (0.12 * k).toFixed(3) + ")");
-            g.addColorStop(1, "rgba(" + GOLD + ", 0)");
-          } else {
-            g.addColorStop(0, "rgba(224, 201, 146, " + (0.28 * k).toFixed(3) + ")");
-            g.addColorStop(0.55, "rgba(" + GOLD + ", " + (0.10 * k).toFixed(3) + ")");
-            g.addColorStop(1, "rgba(" + GOLD + ", 0)");
-          }
+          /* every glow burns ember — reddish-orange, never white */
+          g.addColorStop(0, "rgba(" + EMBER_HI + ", " + (0.38 * k).toFixed(3) + ")");
+          g.addColorStop(0.5, "rgba(" + EMBER + ", " + (0.16 * k).toFixed(3) + ")");
+          g.addColorStop(1, "rgba(" + EMBER + ", 0)");
           x2.fillStyle = g;
           x2.beginPath(); x2.arc(gl.x, gl.y, 11, 0, 7); x2.fill();
         }
@@ -295,7 +291,7 @@
             var m = l.marks[j];
             if (m.s > l.done) break;
             var ddx = m.x - px, ddy = m.y - py;
-            if (!performing && ddx * ddx + ddy * ddy < r2 && now - m.last > 650) {
+            if (ddx * ddx + ddy * ddy < r2 && now - m.last > 650) {
               m.last = now;
               glows.push({ x: m.x, y: m.y, born: now, life: 700 + vel * 500 });
               bow(noteFor(m.y), vel, m.chr, m.x);
@@ -449,8 +445,8 @@
           if (mk.s > eased) break;
           if (!mk.sounded) {
             mk.sounded = true;
-            if (actx && !performing) {
-              bow(noteFor(mk.y), rand(0.2, 0.36), mk.chr, mk.x);
+            if (actx) {
+              bow(noteFor(mk.y), performing ? rand(0.45, 0.6) : rand(0.2, 0.36), mk.chr, mk.x);
               glows.push({ x: mk.x, y: mk.y, born: now, life: 620 });
             }
           }
