@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap">
-    <link rel="stylesheet" href="style.css?v=55">
+    <link rel="stylesheet" href="style.css?v=56">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -49,8 +49,12 @@
       var main = document.querySelector(".page--index"), t = null;
       function arm() {
         main.classList.remove("is-dimmed");
+        document.body.classList.remove("text-dimmed");
         if (t) clearTimeout(t);
-        t = setTimeout(function () { main.classList.add("is-dimmed"); }, 7000);
+        t = setTimeout(function () {
+          main.classList.add("is-dimmed");
+          document.body.classList.add("text-dimmed");
+        }, 7000);
       }
       ["pointerenter", "pointermove", "pointerdown"].forEach(function (ev) {
         main.addEventListener(ev, arm, { passive: true });
