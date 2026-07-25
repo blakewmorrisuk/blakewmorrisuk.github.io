@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>The Log</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#9202;</text></svg>">
+<style>
+  :root{
+    --bg:#faf8f4; --panel:#fffdfa; --ink:#1c1a17; --dim:#6c665d; --line:#e3ddd2;
+    --accent:#7a5c2e; --good:#3f6b47; --bad:#9b4a3f; --warn:#8a6a1f; --soft:#f2ede4;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#14130f; --panel:#1c1a16; --ink:#ece7dd; --dim:#9a938a; --line:#2f2b24;
+      --accent:#d0ab6d; --good:#7fb08a; --bad:#d78c80; --warn:#d3b061; --soft:#232019; }
+  }
+  :root[data-theme="light"]{
+    --bg:#faf8f4; --panel:#fffdfa; --ink:#1c1a17; --dim:#6c665d; --line:#e3ddd2;
+    --accent:#7a5c2e; --good:#3f6b47; --bad:#9b4a3f; --warn:#8a6a1f; --soft:#f2ede4;
+  }
+  :root[data-theme="dark"]{
+    --bg:#14130f; --panel:#1c1a16; --ink:#ece7dd; --dim:#9a938a; --line:#2f2b24;
+    --accent:#d0ab6d; --good:#7fb08a; --bad:#d78c80; --warn:#d3b061; --soft:#232019;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); overflow-x:hidden;
+    font:16px/1.6 ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:32px 20px 72px}
+  h1{font-size:27px;line-height:1.2;margin:0;letter-spacing:-.01em;font-weight:600}
+  .sub{color:var(--dim);font-size:15px;margin:8px 0 0}
+  .rule{height:1px;background:var(--line);border:0;margin:26px 0}
+  a{color:inherit}
+
+  .card{
+    display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:16px 18px;margin:0 0 12px;transition:border-color .15s,transform .15s;
+  }
+  .card:hover{border-color:var(--accent)}
+  .card:active{transform:scale(.995)}
+  .cardtop{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .sn{font-weight:600;font-size:18px}
+  .when{color:var(--dim);font-size:14px;margin-left:auto}
+  .cardsub{color:var(--dim);font-size:14px;margin-top:3px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+  .chip{
+    font:600 12px/1 ui-sans-serif,-apple-system,system-ui,sans-serif;
+    padding:5px 9px;border-radius:999px;background:var(--soft);color:var(--dim);
+    border:1px solid var(--line);white-space:nowrap;
+  }
+  .chip.pass{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line))}
+  .chip.near{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,var(--line))}
+  .chip.under{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+
+  .back{
+    display:inline-block;font:500 14px/1 ui-sans-serif,-apple-system,system-ui,sans-serif;
+    color:var(--dim);text-decoration:none;margin-bottom:18px;
+  }
+  .back:hover{color:var(--accent)}
+
+  .switch{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 0}
+  .switch button{
+    font:600 13px/1 ui-sans-serif,-apple-system,system-ui,sans-serif;cursor:pointer;
+    padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  }
+  .switch button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+  .tabs{display:flex;gap:2px;margin:18px 0 0;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{
+    font:600 14px/1 ui-sans-serif,-apple-system,system-ui,sans-serif;cursor:pointer;white-space:nowrap;
+    padding:11px 14px;border:0;border-bottom:2px solid transparent;background:none;color:var(--dim);
+  }
+  .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+  .pane{padding-top:22px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:15px;margin:0 0 20px}
+  .kv dt{color:var(--dim)}
+  .kv dd{margin:0;font-variant-numeric:tabular-nums}
+
+  .band{
+    display:inline-block;font:600 15px/1 ui-sans-serif,-apple-system,system-ui,sans-serif;
+    padding:8px 13px;border-radius:9px;background:var(--soft);border:1px solid var(--line);
+  }
+  .band.pass{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+  .band.near{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+  .band.under{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+
+  .meter{height:9px;border-radius:99px;background:var(--soft);overflow:hidden;margin:14px 0 6px;border:1px solid var(--line)}
+  .meter i{display:block;height:100%;background:var(--accent)}
+  .metercap{display:flex;justify-content:space-between;color:var(--dim);font-size:13px;
+    font-family:ui-sans-serif,-apple-system,system-ui,sans-serif}
+
+  h3{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);
+     font-family:ui-sans-serif,-apple-system,system-ui,sans-serif;margin:26px 0 10px;font-weight:600}
+  .items{list-style:none;padding:0;margin:0}
+  .items li{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px;line-height:1.5}
+  .items li:last-child{border-bottom:0}
+  .mk{flex:0 0 auto;width:1.6em;font:600 13px/1.6 ui-sans-serif,-apple-system,system-ui,sans-serif}
+  .hit .mk{color:var(--good)}
+  .miss .mk{color:var(--bad)}
+  .miss{color:var(--dim)}
+  .part .mk{color:var(--warn)}
+  .qh{font-weight:600;margin:18px 0 6px;font-size:15px}
+
+  pre.answer{
+    white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;margin:0;
+    font:15px/1.7 ui-serif,Georgia,"Times New Roman",serif;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;
+  }
+  pre.answer.empty{color:var(--dim);font-style:italic}
+  .modelbody p{margin:0 0 14px}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 10px}
+  .noteby{font:600 13px/1 ui-sans-serif,-apple-system,system-ui,sans-serif;color:var(--accent);margin-bottom:6px}
+  .noteby span{color:var(--dim);font-weight:400;margin-left:8px}
+  .note p{margin:0;font-size:15px}
+  .empty{color:var(--dim);font-style:italic}
+
+  .trend{display:flex;gap:3px;align-items:flex-end;height:44px;margin:14px 0 4px}
+  .trend i{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:3px;opacity:.75}
+  .foot{color:var(--dim);font-size:13px;margin-top:44px;
+    font-family:ui-sans-serif,-apple-system,system-ui,sans-serif}
+  @media (max-width:520px){ .wrap{padding:24px 16px 60px} h1{font-size:23px} }
+  /* All four tabs have to be visible on a phone without scrolling. Notes is the one
+     that gets used, and a tab nobody can see is a tab nobody opens. */
+  @media (max-width:440px){
+    .tabs button{padding:11px 9px;font-size:13px}
+    .kv{grid-template-columns:1fr;gap:2px 0}
+    .kv dd{margin-bottom:10px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script src="sessions.js"></script>
+<script>
+(function(){
+  var DATA = (window.SESSIONS && window.SESSIONS.sessions) || [];
+  var app = document.getElementById("app");
+  var esc = function(s){ return String(s==null?"":s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };
+
+  function bandClass(b){
+    b = String(b||"").toLowerCase();
+    if(b.indexOf("significantly above")===0 || b.indexOf("above")===0 || b==="passing") return "pass";
+    if(b.indexOf("slightly below")===0) return "near";
+    if(b.indexOf("below")===0) return "under";
+    return "";
+  }
+  function coverageOf(e){
+    if(typeof e.coverage === "number") return e.coverage;
+    var hit=0, tot=0;
+    (e.questions||[]).forEach(function(q){ (q.items||[]).forEach(function(it){
+      if(it.bonus) return; tot++; if((it.points||0) > 0) hit++;
+    }); });
+    return tot ? Math.round(hit/tot*100) : 0;
+  }
+  function gapText(g){
+    if(g===null||g===undefined) return "";
+    if(g>0) return "+" + g + " band" + (g===1?"":"s") + " better than he called it";
+    if(g<0) return g + " band" + (g===-1?"":"s") + " under what he called";
+    return "called it exactly";
+  }
+
+  /* ------------------------------------------------------------- the index */
+  function renderIndex(){
+    if(!DATA.length){
+      app.innerHTML = '<h1>The Log</h1><p class="sub">Every timed session, as it happens. '+
+        'Nothing here yet.</p>';
+      return;
+    }
+    var cards = DATA.slice().sort(function(a,b){ return b.n - a.n; }).map(function(s){
+      var chips = (s.essays||[]).map(function(e){
+        return '<span class="chip '+bandClass(e.band)+'">'+esc(e.subject+" Q"+e.q)+
+               " &middot; "+esc(e.band)+'</span>';
+      }).join("");
+      var cov = (s.essays||[]).map(coverageOf);
+      var avg = cov.length ? Math.round(cov.reduce(function(a,b){return a+b;},0)/cov.length) : 0;
+      return '<a class="card" href="#/s'+s.n+'">'+
+        '<div class="cardtop"><span class="sn">Session '+s.n+'</span>'+
+        '<span class="when">'+esc(s.pretty||s.date)+'</span></div>'+
+        '<div class="cardsub">'+esc(s.label||"")+
+        (s.minutes?' &middot; '+s.minutes+' min on the clock':'')+
+        ' &middot; '+avg+'% of the checklist</div>'+
+        '<div class="chips">'+chips+'</div></a>';
+    }).join("");
+
+    var all = [];
+    DATA.slice().sort(function(a,b){return a.n-b.n;}).forEach(function(s){
+      (s.essays||[]).forEach(function(e){ all.push(coverageOf(e)); });
+    });
+    var trend = all.length>1
+      ? '<h3>Checklist coverage, essay by essay</h3><div class="trend">'+
+        all.map(function(c){ return '<i style="height:'+Math.max(4,c)+'%"></i>'; }).join("")+
+        '</div><div class="metercap"><span>first</span><span>most recent</span></div>'
+      : "";
+
+    app.innerHTML = '<h1>The Log</h1>'+
+      '<p class="sub">Every timed essay, scored against the real Barbri checklist on that '+
+      'question’s own printed scale. Written under the clock, no second passes.</p>'+
+      '<hr class="rule">'+cards+trend+
+      '<p class="foot">Kentucky bar, July 28 and 29.</p>';
+  }
+
+  /* ----------------------------------------------------------- one session */
+  function renderSession(n, ei, tab){
+    var s = DATA.filter(function(x){ return x.n === n; })[0];
+    if(!s){ location.hash = ""; return; }
+    var essays = s.essays || [];
+    ei = Math.max(0, Math.min(ei||0, essays.length-1));
+    var e = essays[ei] || {};
+    tab = tab || "scorecard";
+
+    var switcher = essays.length > 1
+      ? '<div class="switch">'+essays.map(function(x,i){
+          return '<button type="button" data-e="'+i+'" aria-pressed="'+(i===ei)+'">'+
+                 esc(x.subject+" Q"+x.q)+'</button>'; }).join("")+'</div>'
+      : "";
+
+    var TABS = [["scorecard","Scorecard"],["answer","His answer"],["model","Model answer"],["notes","Notes"]];
+    var tabbar = '<div class="tabs" role="tablist">'+TABS.map(function(t){
+      return '<button type="button" role="tab" data-t="'+t[0]+'" aria-selected="'+(t[0]===tab)+'">'+
+             t[1]+'</button>'; }).join("")+'</div>';
+
+    app.innerHTML = '<a class="back" href="#">&larr; All sessions</a>'+
+      '<h1>Session '+s.n+'</h1>'+
+      '<p class="sub">'+esc(s.pretty||s.date)+(s.mode?' &middot; '+esc(s.mode):'')+
+      (s.minutes?' &middot; '+s.minutes+' min':'')+'</p>'+
+      switcher + tabbar + '<div class="pane" id="pane"></div>';
+
+    document.getElementById("pane").innerHTML = paneHtml(s, e, tab);
+
+    Array.prototype.forEach.call(app.querySelectorAll(".switch button"), function(b){
+      b.onclick = function(){ location.hash = "#/s"+n+"/e"+(+b.dataset.e+1)+"/"+tab; };
+    });
+    Array.prototype.forEach.call(app.querySelectorAll(".tabs button"), function(b){
+      b.onclick = function(){ location.hash = "#/s"+n+"/e"+(ei+1)+"/"+b.dataset.t; };
+    });
+  }
+
+  function paneHtml(s, e, tab){
+    if(tab === "answer"){
+      var t = e.answer || "";
+      return '<pre class="answer'+(t.trim()?"":" empty")+'">'+
+             esc(t.trim() ? t : "Left blank. The clock ran out before this one.")+'</pre>';
+    }
+    if(tab === "model"){
+      if(!e.model) return '<p class="empty">The model answer for this one is on paper.</p>';
+      return '<div class="modelbody">'+e.model.split(/\n{2,}/).map(function(p){
+        return "<p>"+esc(p.trim())+"</p>"; }).join("")+'</div>';
+    }
+    if(tab === "notes"){
+      var notes = s.notes || [];
+      if(!notes.length) return '<p class="empty">Nothing here yet.</p>';
+      return notes.map(function(nt){
+        return '<div class="note"><div class="noteby">'+esc(nt.who)+
+          (nt.when?'<span>'+esc(nt.when)+'</span>':'')+'</div><p>'+esc(nt.text)+'</p></div>';
+      }).join("");
+    }
+
+    // scorecard
+    var cov = coverageOf(e);
+    var pct = e.total ? Math.round((e.raw/e.total)*100) : 0;
+    var h = '<span class="band '+bandClass(e.band)+'">'+esc(e.band||"Not scored")+'</span>';
+    h += '<div class="meter"><i style="width:'+Math.max(0,Math.min(100,pct))+'%"></i></div>'+
+         '<div class="metercap"><span>'+e.raw+' of '+e.total+' points</span><span>'+pct+'%</span></div>';
+    h += '<dl class="kv" style="margin-top:20px">';
+    if(e.predictedBand) h += '<dt>He predicted</dt><dd>'+esc(e.predictedBand)+
+      (e.gap!==undefined&&e.gap!==null?' <span style="color:var(--dim)">('+esc(gapText(e.gap))+')</span>':'')+'</dd>';
+    h += '<dt>Checklist reached</dt><dd>'+cov+'%</dd>';
+    if(e.minutes) h += '<dt>Time</dt><dd>'+e.minutes+' min</dd>';
+    if(e.words!==undefined) h += '<dt>Length</dt><dd>'+e.words+' words</dd>';
+    h += '</dl>';
+
+    (e.questions||[]).forEach(function(q){
+      h += '<div class="qh">'+esc(q.title||"")+'</div><ul class="items">';
+      (q.items||[]).forEach(function(it){
+        var max = it.max===undefined?1:it.max, pts = it.points||0;
+        var cls = pts>=max ? "hit" : (pts>0 ? "part" : "miss");
+        var mk = pts>=max ? "&#10003;" : (pts>0 ? pts+"/"+max : "&mdash;");
+        h += '<li class="'+cls+'"><span class="mk">'+mk+'</span><span>'+esc(it.text)+
+             (it.bonus?' <span style="color:var(--dim)">(bonus)</span>':'')+'</span></li>';
+      });
+      h += '</ul>';
+    });
+
+    if(e.biggestMiss) h += '<h3>Biggest miss</h3><p>'+esc(e.biggestMiss)+'</p>';
+    if(e.habit) h += '<h3>The one habit</h3><p>'+esc(e.habit)+'</p>';
+    return h;
+  }
+
+  function route(){
+    var m = (location.hash||"").match(/^#\/s(\d+)(?:\/e(\d+))?(?:\/(\w+))?/);
+    if(!m){ renderIndex(); window.scrollTo(0,0); return; }
+    renderSession(+m[1], m[2]? +m[2]-1 : 0, m[3]);
+  }
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
+</body>
+</html>
