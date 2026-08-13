@@ -19,7 +19,7 @@
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="fonts/cormorant-garamond-m.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=70">
+    <link rel="stylesheet" href="style.css?v=71">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -810,14 +810,23 @@
            in about two and a half seconds instead of thirty. The
            document.hidden guard is there because a backgrounded tab
            legitimately stops firing them. */
+        var frames = 0, wdSeen = -1;
         var wd = setInterval(function () {
           if (opened) { clearInterval(wd); return; }
           if (armed && seen && !burning) { stop(); return; }
+          /* Counted frames, not elapsed time. The timestamp version
+             of this check was wrong: visibilitychange resets `last` to
+             zero, so on the next tick it measured from startedAt
+             instead, which is ancient by then, and declared a perfectly
+             healthy animation dead the first time the page was
+             backgrounded. A counter cannot be fooled by a clock reset. */
           if (burning && !document.hidden) {
-            var idle = performance.now() - (last || startedAt || 0);
-            if (idle > 2500) stop();
+            if (frames === wdSeen) { stop(); return; }
+            wdSeen = frames;
+          } else {
+            wdSeen = -1;
           }
-        }, 1500);
+        }, 2000);
         /* And a last resort, for a browser that somehow runs none of
            the above. Long enough that it can never pre-empt a healthy
            sequence, which finishes in about twenty seconds. */
@@ -835,39 +844,20 @@
         }
 
         /* ---- the shape of the cut -------------------------------- *
-           One closed walk from the top-left corner, with three lifts
-           in it. Local coordinates, origin at the card's top-left,
-           so a scroll moves nothing. The left edge is never
-           interrupted: it is the edge that has to rhyme with the rule
-           on the first card. */
-        var TAB = 15, TABS = [];
+           Local coordinates, origin at the card's top-left, so a
+           scroll moves nothing. */
+        /* Four sides, cut end to end, with nothing left uncut.
+
+           There were three tabs here, at the midpoints of three of the
+           sides, because a real cutter leaves them so the slug does
+           not drop on their boots. It is true, and it read as a
+           disconnected rectangle, which is not what was asked for. One
+           closed rectangle, burned in one pass. */
         function runs(w, h) {
-          function mid(a, b) { return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; }
-          var TL = [0, 0], BL = [0, h], BR = [w, h], TR = [w, 0];
-          function gap(a, b) {           /* two points either side of a tab */
-            var m = mid(a, b), dx = b[0] - a[0], dy = b[1] - a[1];
-            var L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
-            return [[m[0] - ux * TAB / 2, m[1] - uy * TAB / 2],
-                    [m[0] + ux * TAB / 2, m[1] + uy * TAB / 2]];
-          }
-          var gb = gap(BL, BR), gr = gap(BR, TR), gt = gap(TR, TL);
-          /* Where the last uncut material is, and which way it throws
-             when it lets go. Recorded here so the walk and the snap
-             can never disagree about where a tab was. */
-          TABS = [
-            { x: (BL[0] + BR[0]) / 2, y: h, dir: Math.PI / 2 },
-            { x: w, y: (BR[1] + TR[1]) / 2, dir: 0 },
-            { x: (TR[0] + TL[0]) / 2, y: 0, dir: -Math.PI / 2 }
-          ];
-          /* lift: true means the torch goes dark and jumps the tab */
+          var TL = [0, 0], TR = [w, 0], BR = [w, h], BL = [0, h];
           return [
-            { pts: [TL, BL],      lift: false },
-            { pts: [BL, gb[0]],   lift: false },
-            { pts: [gb[1], BR],   lift: true  },
-            { pts: [BR, gr[0]],   lift: false },
-            { pts: [gr[1], TR],   lift: true  },
-            { pts: [TR, gt[0]],   lift: false },
-            { pts: [gt[1], TL],   lift: true  }
+            { pts: [TL, TR] }, { pts: [TR, BR] },
+            { pts: [BR, BL] }, { pts: [BL, TL] }
           ].map(function (r) {
             r.len = Math.hypot(r.pts[1][0] - r.pts[0][0], r.pts[1][1] - r.pts[0][1]);
             return r;
@@ -883,7 +873,9 @@
           kerf.setAttribute("viewBox", "0 0 " + w + " " + h);
           var out = "";
           runs(w, h).forEach(function (r, i) {
-            out += '<path class="kerf-line' + (i === 0 ? " kerf-left" : "") +
+            /* run 3 is BL -> TL, the left edge, which carries the
+               same weight as the rule the first card hangs from */
+            out += '<path class="kerf-line' + (i === 3 ? " kerf-left" : "") +
                    '" d="M' + r.pts[0][0] + " " + r.pts[0][1] +
                    "L" + r.pts[1][0] + " " + r.pts[1][1] + '"/>';
           });
@@ -893,13 +885,17 @@
         addEventListener("resize", function () { if (opened) drawKerf(); });
 
         /* ---- anyone in a hurry ---------------------------------- */
-        /* Tapping the card's own patch of page finishes it at once.
-           Deliberately scoped to this one element and NOT to the
-           document: a tap anywhere else on this page is someone
-           playing the strings in the field, and that must not put the
-           torch out. Focus counts too, so a keyboard arriving here by
-           tab never lands on something it cannot see. */
-        cut.addEventListener("pointerdown", function () { stop(); });
+        /* THERE IS DELIBERATELY NO POINTER HANDLER HERE. There was
+           one, on pointerdown, meant as a way to skip to the finished
+           state. On a phone it was a disaster: a scroll that begins
+           with a finger anywhere on this card fires pointerdown before
+           it fires anything else, so scrolling the page killed the cut
+           partway round and dropped the finished hairline in its
+           place. That is the "it stops halfway, and moving the screen
+           makes the rest appear" bug, and it was entirely this line.
+
+           Focus stays, because a keyboard must never land on something
+           it cannot see, and focus cannot be triggered by a scroll. */
         card.addEventListener("focus", function () { stop(); }, true);
 
         /* ---- heat ------------------------------------------------ *
@@ -1239,7 +1235,7 @@
            point, so the perimeter takes about ten seconds rather than
            the three and a half it used to. Speed is still constant, so
            a long edge simply takes longer than a short one. */
-        var ARRIVE_MS = 1150, LEAD_MS = 1350, BITE_MS = 560;
+        var ARRIVE_MS = 1400;
 
         function ease(u) { return u * u * (3 - 2 * u); }
 
@@ -1258,11 +1254,11 @@
         } else { seen = true; }
 
         /* ---- the loop ------------------------------------------- */
-        var now = 0, flare = 0, pause = 0, fresh = true, laid = 0;
+        var now = 0, flare = 0, fresh = true, laid = 0;
         function frame(ts) {
           if (!burning) return;
           raf = requestAnimationFrame(frame);
-          now = ts;
+          now = ts; frames++;
           var dt = last ? Math.min(48, ts - last) : 16;
           last = ts;
           pt += dt;
@@ -1276,55 +1272,24 @@
           ctx.globalCompositeOperation = "lighter";
 
           if (phase === "arrive") {
-            /* The torch does not travel in from anywhere. It comes to
-               be at the middle of the plate, the way a light does when
-               somebody strikes one: nothing, then a dim point, then
-               heat. Riding an ember down from the light-bar was the
-               first idea and it was the wrong one; it made the whole
-               thing a delivery rather than an arrival. */
+            /* The torch appears where the cut starts, and starts
+               cutting. It used to be struck in the middle of the plate
+               and led out along the diagonal to the corner, which is
+               what a real cutter does and is not what was wanted here.
+               Appear, burn a rectangle, go out. */
             var u = Math.min(1, pt / ARRIVE_MS);
-            head.x = geo.x + geo.w / 2;
-            head.y = geo.y + geo.h / 2;
-            lit = ease(u);
-            hot = 0.26 + 0.36 * u + 0.05 * Math.sin(pt * 0.0068) * u;
-            if (Math.random() < 0.020 * u) spark(head.x, head.y, Math.PI / 2, 1, 0.30);
-            if (pt >= ARRIVE_MS) { phase = "lead"; pt = 0; }
-          } else if (phase === "lead") {
-            /* Out to the corner on the diagonal. A cutter pierces in
-               the scrap and leads out to the line, because the pierce
-               crater is ugly and has no business on a finished edge.
-               It lays NO seam on the way: a lead-in that cooled to
-               gold would leave a permanent diagonal scar across the
-               inside of the card. */
-            var e = ease(Math.min(1, pt / LEAD_MS));
-            head.x = geo.x + (geo.w / 2) * (1 - e);
-            head.y = geo.y + (geo.h / 2) * (1 - e);
-            lit = 1;
-            hot = 0.62 + 0.26 * e;
-            if (Math.random() < 0.10) spark(head.x, head.y, Math.PI / 2, 1, 0.45);
-            if (pt >= LEAD_MS) { phase = "bite"; pt = 0; }
-          } else if (phase === "bite") {
-            /* Preheat. A real torch cannot cut until the steel reaches
-               kindling temperature, so the anticipation beat here is
-               not a stylistic pause, it is the thing actually
-               happening. */
             head.x = geo.x; head.y = geo.y;
-            lit = 1;
-            hot = 0.88 + 0.12 * Math.min(1, pt / BITE_MS);
-            if (Math.random() < 0.05) spark(head.x, head.y, Math.PI / 2, 1, 0.4);
-            if (pt >= BITE_MS) {
+            lit = ease(u);
+            hot = 0.30 + 0.70 * u;
+            if (Math.random() < 0.05 * u) spark(head.x, head.y, Math.PI / 2, 1, 0.35);
+            if (pt >= ARRIVE_MS) {
               phase = "cut"; pt = 0; ri = 0; rd = 0; laid = 0;
               RUNS = runs(geo.w, geo.h);
               cut.classList.add("is-cutting");
-              spark(head.x, head.y, Math.PI / 2, 24, 1.45);
+              spark(head.x, head.y, Math.PI / 2, 22, 1.35);
             }
           } else if (phase === "cut") {
-            if (pause > 0) {
-              pause -= dt;
-              lit = Math.max(0, lit - dt / 160);             /* the torch lifts */
-              hot = 0.5;
-              if (pause <= 0) spark(head.x, head.y, Math.PI / 2, 14, 1.2);
-            } else {
+            {
               lit = Math.min(1, lit + dt / 120);
               var run = RUNS[ri];
               var u2 = run.len ? rd / run.len : 1;
@@ -1334,23 +1299,9 @@
                 if (ri >= RUNS.length) {
                   phase = "give"; pt = 0; flare = 1;
                   spark(geo.x, geo.y, Math.PI / 2, 20, 1.1);
-                  /* The loop is closed, so schedule the three tabs to
-                     let go. Shuffled, and 0/26/54ms apart: evenly
-                     spaced and in order they read as a sequence
-                     someone programmed. */
-                  var ord = [0, 1, 2];
-                  for (var q = 2; q > 0; q--) {
-                    var w2 = (Math.random() * (q + 1)) | 0;
-                    var tmp = ord[q]; ord[q] = ord[w2]; ord[w2] = tmp;
-                  }
-                  [0, 26, 54].forEach(function (d, n) {
-                    if (TABS[ord[n]]) TABS[ord[n]].at = 280 + d;
-                  });
-                } else if (RUNS[ri].lift) {
-                  pause = 260;                                /* jump the tab */
                 }
               }
-              if (phase === "cut" && !pause) {
+              if (phase === "cut") {
                 run = RUNS[ri];
                 var uu = run.len ? rd / run.len : 0;
                 var ax = run.pts[0][0], ay = run.pts[0][1];
@@ -1386,38 +1337,17 @@
               }
             }
           } else if (phase === "give") {
-            lit = Math.max(0, lit - dt / 220);
-            /* The beat. Nothing new arrives for a moment and the head
-               dims and drifts off, while the perimeter is visibly
-               cooling. A held frame with something cooling in it reads
-               as a beat; a held frame with nothing moving reads as a
-               hang, and they are the same length. */
-            if (pt > 60) {
-              head.y -= dt * 0.014; head.x -= dt * 0.010;
-            }
-            /* Then the tabs go, one at a time and slightly out of
-               order, because material failing is not a switch being
-               thrown. Each throws its own sparks outward, away from
-               the piece it was holding. */
-            for (var ti = 0; ti < TABS.length; ti++) {
-              var tb = TABS[ti];
-              if (!tb.gone && pt >= tb.at) {
-                tb.gone = ts;
-                spark(geo.x + tb.x, geo.y + tb.y, tb.dir, 8, 1.25);
-              }
-              if (tb.gone && ts - tb.gone < 110) {
-                var ta = 1 - (ts - tb.gone) / 110;
-                blit(geo.x + tb.x - scrollX, geo.y + tb.y - scrollY,
-                     3 + ta * 7, 1, 0.75 * ta);
-              }
-            }
-            /* and only now does the slug let go */
-            if (pt > 372 && !revealAt) {
+            /* The rectangle is closed. The torch goes out, over the
+               better part of a second, and does not move while it
+               does. No tabs snapping, no slug tipping forward, no
+               flourish of any kind: appear, burn a rectangle, fade. */
+            lit = Math.max(0, 1 - pt / 900);
+            hot = Math.max(0, 1 - pt / 700);
+            if (pt > 620 && !revealAt) {
               revealAt = ts;
-              open();   /* draws the cold hairline too, which then rises
-                           underneath the fire as the fire goes out */
+              open();
             }
-            if (pt > 700) { phase = "cool"; pt = 0; coolFrom = ts; }
+            if (pt > 980) { phase = "cool"; pt = 0; coolFrom = ts; }
           } else if (phase === "cool") {
             lit = 0;
             if (pt > COOL + 500) { stop(); return; }

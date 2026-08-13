@@ -172,7 +172,11 @@ a { color: var(--amber); }
    ~92% full. Justifying it too closes the block into a clean rectangle.
    On narrow screens the wrap varies, so the last line stays natural. */
 @media (min-width: 530px) {
-    .entry-desc { text-align-last: justify; }
+    /* NOT .entry--cut. That rule only works where the copy happens to
+       fill its last line, which the Letters card does and this one does
+       not: it ends on "There is no AI in it.", and justifying a short
+       last line stretches five words across the whole column. */
+    .entry:not(.entry--cut) .entry-desc { text-align-last: justify; }
 }
 
 /* ---- N° 02: the card that is cut rather than engraved --------------
@@ -274,6 +278,21 @@ a { color: var(--amber); }
    here, the link stays live the entire time it is invisible. */
 /* The hairline is drawn by script only once it has cooled, so nothing
    outlines an empty box before the torch has been anywhere near it. */
+/* Cold. The state a visitor finds once it has burned, and the state
+   a visitor who never saw it burn finds immediately. Deleting these
+   two rules leaves four <path> elements with no stroke, which is four
+   invisible lines and no rectangle, and it has happened twice. The
+   check in the harness asserts a NON-TRANSPARENT stroke for exactly
+   that reason. */
+.cut-kerf .kerf-line {
+    stroke: rgba(201, 168, 92, 0.22);
+    stroke-width: 1;
+}
+/* The left edge carries the weight of the rule the first card hangs
+   from, so the two entries still rhyme. */
+.cut-kerf .kerf-left {
+    stroke: rgba(201, 168, 92, 0.4);
+}
 .cut.is-sealed .cut-kerf { opacity: 0; }
 .cut-kerf { transition: opacity .6s ease; }
 .cut-kerf .kerf-line { transition: stroke .3s ease; }
