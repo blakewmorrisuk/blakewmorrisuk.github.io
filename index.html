@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Blake Morris</title>
-    <meta name="description" content="Personal projects from Blake Morris. Things being built outside of law school.">
+    <meta name="description" content="Projects by Blake Morris. A wartime family archive, and a drafting tool built for law firms.">
     <meta name="theme-color" content="#0a0a0b">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Blake Morris">
-    <meta property="og:description" content="Personal projects from Blake Morris. Things being built outside of law school.">
+    <meta property="og:description" content="Projects by Blake Morris. A wartime family archive, and a drafting tool built for law firms.">
     <meta property="og:url" content="https://blakewmorrisuk.github.io/">
     <meta property="og:image" content="https://blakewmorrisuk.github.io/og-image.png">
     <meta property="og:image:width" content="1200">
@@ -19,11 +19,15 @@
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="fonts/cormorant-garamond-m.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=68">
+    <link rel="stylesheet" href="style.css?v=69">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
     <canvas id="etch2" aria-hidden="true"></canvas>
+    <!-- The torch. Fixed and full-viewport like the two above it, but
+         painted OVER the page rather than under it, because sparks pass
+         in front of the type. Created empty and removed once cold. -->
+    <canvas id="cut-fire" aria-hidden="true"></canvas>
     <main class="page page--index">
         <header class="index-head">
             <div class="eyebrow">§ Not Law Stuff</div>
@@ -46,6 +50,36 @@
                 <h2 class="entry-title">Letters</h2>
                 <p class="entry-desc">An attempt to preserve family history. These are the wartime love letters from my grandfather to my grandmother. They follow him through basic training, his arrival at Pearl Harbor before Japan&rsquo;s attack, and his voyage aboard the U.S.S. New Orleans (CA&#8209;32).</p>
             </a>
+
+            <!-- N° 01 is engraved. N° 02 is cut.
+
+                 The first card is drawn by the same slow gold blade that
+                 etches the field behind it. This one is opened from the
+                 outside: when the light-bar finishes its sweep an ember
+                 falls from the tip, runs down the first card's own rule,
+                 drops off the end into the dark, and burns a rectangle
+                 out of the page. What is behind the plate is the card.
+
+                 The card is in the document and in the tab order from the
+                 first byte. The seal is presentation only, a failsafe
+                 opens it unconditionally, and reduced motion never sees
+                 fire. The worst case here is a card that did not perform,
+                 never a card that is not there. -->
+            <div class="cut" id="cut">
+                <svg class="cut-kerf" id="cut-kerf" aria-hidden="true" focusable="false"></svg>
+                <a class="entry entry--cut" id="entry-caddy" href="caddy/demo/">
+                    <span class="entry-no">N° 02</span>
+                    <h2 class="entry-title">Caddy</h2>
+                    <p class="entry-desc">A tool for attorneys, and the first thing I have built to sell. It opens the casefile inside Word, where the drafting actually happens, so the record is a glance away instead of a folder away. It runs on the firm&rsquo;s own machine. Nothing is sent anywhere. There is no AI in it.</p>
+                </a>
+                <!-- The slug: the piece being cut out. It has to be a
+                     faintly present object rather than a black hole,
+                     or nothing is seen to leave when it goes. It tips
+                     forward off its top edge and falls, and those two
+                     or three pixels are the whole point of the effect.
+                     Until then it is what is covering the card. -->
+                <div class="cut-plate" aria-hidden="true"></div>
+            </div>
         </section>
 
         <button class="m-mark" id="m-play" aria-label="Play the lines">M</button>
@@ -551,9 +585,14 @@
             tip = document.getElementById("lightbar-tip"),
             hit = document.getElementById("lightbar-hit");
         var FEATHER = 90;
-        var governed = [".index-head", ".entry", ".m-mark"].map(function (s) {
-          return document.querySelector(s);
-        }).filter(Boolean);
+        /* querySelectorAll, not querySelector: the dial governs EVERY
+           entry. With the singular form a second card would sit there
+           fully lit while the rest of the page went dark, which is the
+           one thing the light-bar must never do. */
+        var governed = [];
+        [".index-head", ".entry", ".m-mark"].forEach(function (s) {
+          Array.prototype.push.apply(governed, document.querySelectorAll(s));
+        });
         var t = 1, span = { L: 0, R: 1 };
         function measure() {
           var r = (document.querySelector(".entry") || lbar).getBoundingClientRect();
@@ -670,6 +709,755 @@
             lbar.classList.remove("lightbar-dawn");
           }, 7300));
         }
+      })();
+      /* ---- N° 02: the plate is cut, not drawn --------------------- *
+
+         The first card is engraved by the same slow gold blade that
+         etches the field. This one is opened from the outside.
+
+         WHAT HAPPENS. When the light-bar finishes its sweep, an ember
+         leaves the tip, curves down onto the head of the first card's
+         own rule, runs the length of it, drops off the bottom into the
+         unlit dark, and stops at the corner of nothing. There it sits
+         and gets hot. When the second card is actually on screen it
+         bites, and burns a rectangle out of the page: down the left,
+         along the bottom, up the right, back across the top. It leaves
+         three tabs uncut, because a cutter who closes the loop drops
+         the slug on their boots. The loop finishes, the plate gives,
+         and what was behind it is the card. Then it cools, and all
+         that is left is a gold hairline like every other line here.
+
+         WHY IT IS BUILT THIS WAY.
+
+         One canvas, fixed and full-viewport, over the page. Not an
+         absolutely positioned one sized to the card: that version
+         contributes to scrollWidth and put a horizontal scrollbar on
+         every phone. The rectangle's position is read from the card
+         each frame, which also makes the whole thing survive a scroll
+         for free.
+
+         Constant speed, never constant duration per side. A person
+         moves the tip at one rate, so a long edge simply takes longer
+         than a short edge. Giving all four sides the same duration is
+         the single clearest tell that a computer drew it, and it is
+         what falls out of a keyframe timeline, which is why almost
+         every version of this effect on the internet has it.
+
+         The trail is faded with destination-out, which multiplies the
+         existing alpha down. The usual trick is a low-alpha black
+         fillRect, and it is a trap here: black is opaque, and this
+         canvas has the whole live page behind it.
+
+         Every glow is one 128px radial-gradient sprite, built once and
+         blitted. Not shadowBlur, not filter, not a gradient per
+         particle per frame. Sparks stretch that same sprite along
+         their own velocity, so the streak costs nothing.
+
+         The card is in the document, in the tab order and readable by
+         a crawler from the first byte. The seal is opacity. A failsafe
+         opens it unconditionally, any interaction opens it at once,
+         and reduced motion never sees fire. The worst case this can
+         reach is a card that did not perform. */
+      (function () {
+        var cut  = document.getElementById("cut"),
+            card = document.getElementById("entry-caddy"),
+            kerf = document.getElementById("cut-kerf"),
+            cv   = document.getElementById("cut-fire");
+        if (!cut || !card || !kerf || !cv) return;
+
+        /* ---- the one thing that cannot fail ---------------------- */
+        var opened = false, burning = false, raf = 0;
+        function open() {
+          if (opened) return;
+          opened = true;
+          drawKerf();
+          cut.classList.remove("is-sealed");
+        }
+        function stop() {
+          burning = false;
+          if (raf) { cancelAnimationFrame(raf); raf = 0; }
+          if (cv && cv.parentNode) cv.parentNode.removeChild(cv);
+          open();
+        }
+        /* THE ORDER OF THE NEXT TWELVE LINES IS THE WHOLE SAFETY
+           ARGUMENT, so do not rearrange them.
+
+           The card's resting, revealed state is the MARKUP. The seal
+           is put on by script, and only after the timer that takes it
+           off unconditionally has already been registered. Sealing in
+           the HTML instead, which is where this started, means a throw
+           anywhere below here, or a blocked script, or a WebView that
+           kills a long-running one, leaves the page's primary link
+           permanently invisible while still sitting in the tab order
+           and the accessibility tree: announced, focusable, and
+           unreachable. opacity 0 is not overridden by forced-colors
+           either, so it would be invisible in High Contrast too.
+
+           Now the worst case is a card that did not perform. */
+        setTimeout(function () { if (!opened) stop(); }, 12000);
+
+        var calm = matchMedia("(prefers-reduced-motion: reduce)");
+        if (calm.matches) { stop(); return; }   /* stop, not open: also frees the canvas */
+        cut.classList.add("is-sealed");
+        /* Read once at load is not enough: the setting can be turned
+           on from an iOS Control Center or macOS Accessibility while
+           the page is open, and someone who reaches for it mid-effect
+           is exactly the person who most needs it to stop. */
+        if (calm.addEventListener) {
+          calm.addEventListener("change", function (e) { if (e.matches) stop(); });
+        }
+
+        /* ---- the shape of the cut -------------------------------- *
+           One closed walk from the top-left corner, with three lifts
+           in it. Local coordinates, origin at the card's top-left,
+           so a scroll moves nothing. The left edge is never
+           interrupted: it is the edge that has to rhyme with the rule
+           on the first card. */
+        var TAB = 15, TABS = [];
+        function runs(w, h) {
+          function mid(a, b) { return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; }
+          var TL = [0, 0], BL = [0, h], BR = [w, h], TR = [w, 0];
+          function gap(a, b) {           /* two points either side of a tab */
+            var m = mid(a, b), dx = b[0] - a[0], dy = b[1] - a[1];
+            var L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+            return [[m[0] - ux * TAB / 2, m[1] - uy * TAB / 2],
+                    [m[0] + ux * TAB / 2, m[1] + uy * TAB / 2]];
+          }
+          var gb = gap(BL, BR), gr = gap(BR, TR), gt = gap(TR, TL);
+          /* Where the last uncut material is, and which way it throws
+             when it lets go. Recorded here so the walk and the snap
+             can never disagree about where a tab was. */
+          TABS = [
+            { x: (BL[0] + BR[0]) / 2, y: h, dir: Math.PI / 2 },
+            { x: w, y: (BR[1] + TR[1]) / 2, dir: 0 },
+            { x: (TR[0] + TL[0]) / 2, y: 0, dir: -Math.PI / 2 }
+          ];
+          /* lift: true means the torch goes dark and jumps the tab */
+          return [
+            { pts: [TL, BL],      lift: false },
+            { pts: [BL, gb[0]],   lift: false },
+            { pts: [gb[1], BR],   lift: true  },
+            { pts: [BR, gr[0]],   lift: false },
+            { pts: [gr[1], TR],   lift: true  },
+            { pts: [TR, gt[0]],   lift: false },
+            { pts: [gt[1], TL],   lift: true  }
+          ].map(function (r) {
+            r.len = Math.hypot(r.pts[1][0] - r.pts[0][0], r.pts[1][1] - r.pts[0][1]);
+            return r;
+          });
+        }
+
+        /* ---- the resting state ----------------------------------- *
+           Static SVG, so the cooled edge is a true hairline at any
+           pixel density and survives every resize without a script. */
+        function drawKerf() {
+          var w = card.offsetWidth, h = card.offsetHeight;
+          if (!w || !h) return;
+          kerf.setAttribute("viewBox", "0 0 " + w + " " + h);
+          var out = "";
+          runs(w, h).forEach(function (r, i) {
+            out += '<path class="kerf-line' + (i === 0 ? " kerf-left" : "") +
+                   '" d="M' + r.pts[0][0] + " " + r.pts[0][1] +
+                   "L" + r.pts[1][0] + " " + r.pts[1][1] + '"/>';
+          });
+          kerf.innerHTML = out;
+          /* Only now drop the plain CSS rectangle that was holding the
+             shape in case none of this ever ran. */
+          cut.classList.add("has-kerf");
+        }
+        addEventListener("resize", function () { if (opened) drawKerf(); });
+
+        /* ---- anyone in a hurry ---------------------------------- */
+        /* Tapping the card's own patch of page finishes it at once.
+           Deliberately scoped to this one element and NOT to the
+           document: a tap anywhere else on this page is someone
+           playing the strings in the field, and that must not put the
+           torch out. Focus counts too, so a keyboard arriving here by
+           tab never lands on something it cannot see. */
+        cut.addEventListener("pointerdown", function () { stop(); });
+        card.addEventListener("focus", function () { stop(); }, true);
+
+        /* ---- heat ------------------------------------------------ *
+           Steel cooling, in the order steel actually does it: white,
+           pale yellow, orange, cherry, dull red, gone. It does NOT
+           interpolate to the page's gold at the end, because there is
+           no such thing as gold-hot metal. The heat fades to nothing
+           and the static gold hairline rises underneath it, so what
+           the etching field is really doing is claiming the edge once
+           the fire has left it. */
+        /* Measured incandescence, not invented colour. The important
+           constraint: steel below about 1950K has a literally zero
+           blue channel, so it CANNOT be white. Pushing the ramp toward
+           white to get a hot tip is the classic mistake; the white
+           comes only from an additive bloom sitting on top of it. The
+           bottom of the ramp is the Draper point, around 525C, which
+           is the real temperature at which glow runs out. 0.34 is
+           pinned exactly to the ember colour the page's own etching
+           canvas already uses, so the torch is made of the same fire
+           as everything else here. */
+        var STOPS = [
+          [0.00,  88,  30,  16], [0.10,  88,  30,  16],
+          [0.16, 120,  44,  22], [0.24, 158,  72,  36],
+          [0.34, 196, 102,  54], [0.46, 232, 124,  48],
+          [0.58, 250, 160,  60], [0.70, 255, 200,  74],
+          [0.82, 255, 224, 138], [0.92, 255, 244, 200],
+          [1.00, 255, 247, 214]
+        ];
+        /* 32 buckets, not 16. Sixteen puts a discrete colour step every
+           ~84px along the seam, which on a near-black page is roughly
+           where the eye is most sensitive to a luminance edge. Thirty
+           two prebuilt sprites is still zero allocation in the loop. */
+        var LUT = [], glow = [], haze = [], bloom = null, NB = 32;
+        (function () {
+          var i, j, a, b, k;
+          for (i = 0; i < NB; i++) {
+            var h = i / (NB - 1);
+            for (j = 1; j < STOPS.length - 1 && STOPS[j][0] < h; j++) {}
+            a = STOPS[j - 1]; b = STOPS[j];
+            k = (h - a[0]) / ((b[0] - a[0]) || 1);
+            LUT.push([Math.round(a[1] + (b[1] - a[1]) * k),
+                      Math.round(a[2] + (b[2] - a[2]) * k),
+                      Math.round(a[3] + (b[3] - a[3]) * k)]);
+          }
+          function sprite(stops) {
+            var s = document.createElement("canvas");
+            s.width = s.height = 64;
+            var sx = s.getContext("2d");
+            var g = sx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            stops.forEach(function (st) { g.addColorStop(st[0], st[1]); });
+            sx.fillStyle = g; sx.fillRect(0, 0, 64, 64);
+            return s;
+          }
+          for (i = 0; i < NB; i++) {
+            var c = LUT[i].join(",");
+            /* Two profiles per temperature, and they are not
+               interchangeable. GLOW is sharply peaked: a small hard
+               core inside a faint skirt, which is what an ember or a
+               spark looks like. HAZE is deliberately flat-topped and
+               broad, for the band of hot metal either side of the cut.
+               Using the peaked one along the seam is what made the
+               kerf come out beaded: the skirts merged but the little
+               hard cores stayed separate, four pixels apart, and the
+               eye reads that as a dotted line every time. */
+            glow.push(sprite([
+              [0.00, "rgba(" + c + ",0.90)"], [0.14, "rgba(" + c + ",0.76)"],
+              [0.38, "rgba(" + c + ",0.28)"], [0.68, "rgba(" + c + ",0.09)"],
+              [1.00, "rgba(" + c + ",0)"]
+            ]));
+            haze.push(sprite([
+              [0.00, "rgba(" + c + ",0.40)"], [0.32, "rgba(" + c + ",0.27)"],
+              [0.64, "rgba(" + c + ",0.10)"], [1.00, "rgba(" + c + ",0)"]
+            ]));
+          }
+          /* The bloom is a separate, achromatic-warm sprite, and its
+             warmth peaks OUTSIDE its core: red minus blue rises as
+             luminance falls. That inversion is what a camera does with
+             a real flame, and it is why a single-colour halo always
+             looks like a sticker. Peak alpha is capped below 1 so that
+             additive stacking cannot clip the whole tip to paper white. */
+          bloom = sprite([
+            [0.00, "rgba(255,250,236,0.90)"], [0.22, "rgba(255,226,150,0.42)"],
+            [0.55, "rgba(240,150,60,0.16)"],  [0.82, "rgba(196,102,54,0.05)"],
+            [1.00, "rgba(196,102,54,0)"]
+          ]);
+        })();
+        function band(t) {
+          return glow[Math.max(0, Math.min(NB - 1, Math.round(t * (NB - 1))))];
+        }
+        function soft(t) {
+          return haze[Math.max(0, Math.min(NB - 1, Math.round(t * (NB - 1))))];
+        }
+        function hue(t) {
+          return LUT[Math.max(0, Math.min(NB - 1, Math.round(t * (NB - 1))))];
+        }
+        function blit(x, y, r, t, a) {
+          if (a <= 0.01 || r <= 0.2) return;
+          ctx.globalAlpha = a > 1 ? 1 : a;
+          ctx.drawImage(band(t), x - r, y - r, r * 2, r * 2);
+        }
+
+        /* ---- the surface ---------------------------------------- */
+        var ctx = cv.getContext("2d"), dpr = 1, VW = 0, VH = 0;
+        function size() {
+          dpr = Math.min(devicePixelRatio || 1, 2);
+          VW = innerWidth; VH = innerHeight;
+          cv.width = VW * dpr; cv.height = VH * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        size();
+        addEventListener("resize", function () { if (burning) size(); });
+
+        /* ---- state ---------------------------------------------- */
+        var seam = [], sparks = [];
+        var phase = "wait", pt = 0, last = 0;
+        var head = { x: 0, y: 0 }, hot = 0, lit = 0;
+        var ri = 0, rd = 0, RUNS = [], geo = null;
+        var seen = false, revealAt = 0, coolFrom = 0;
+
+        function rnd(a, b) { return a + Math.random() * (b - a); }
+
+        /* Page coordinates, not viewport: the sequence has to survive
+           a scroll, and on a phone it will certainly get one. */
+        function pageBox() {
+          var r = card.getBoundingClientRect();
+          return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height };
+        }
+
+        /* ---- sparks --------------------------------------------- *
+           Gravity is added to the direction rather than to a y
+           component, which makes them arc instead of falling in clean
+           parabolas, and a few of them fork in flight. The forking is
+           the thing that reads as cutting rather than as fireworks. */
+        function spark(x, y, dir, n, force) {
+          for (var i = 0; i < n && sparks.length < 210; i++) {
+            var a = dir + rnd(-0.85, 0.85);
+            sparks.push({
+              x: x, y: y, dir: a, v: rnd(1.4, 7.2) * (force || 1),
+              life: 1, decay: rnd(0.012, 0.05), t: rnd(0.72, 1),
+              w: rnd(0.9, 2.4), kid: 0
+            });
+          }
+        }
+        function stepSparks(dt) {
+          var f = dt / 16.67;
+          for (var i = sparks.length - 1; i >= 0; i--) {
+            var s = sparks[i];
+            s.life -= s.decay * f;
+            if (s.life <= 0) { sparks.splice(i, 1); continue; }
+            s.dir += (0.052 + s.v * 0.0015) * f;      /* gravity, as a turn */
+            s.v *= Math.pow(0.94, f);
+            var px = s.x, py = s.y;
+            s.x += Math.cos(s.dir) * s.v * f;
+            s.y += Math.sin(s.dir) * s.v * f;
+            s.t *= Math.pow(0.985, f);
+            /* the crackle: a hot fast one occasionally throws children */
+            if (!s.kid && s.v > 3.4 && Math.random() < 0.011 * f && sparks.length < 190) {
+              s.kid = 1;
+              for (var k = 0, n = 2 + ((Math.random() * 5) | 0); k < n; k++) {
+                sparks.push({ x: s.x, y: s.y, dir: s.dir + rnd(-1.5, 1.5),
+                  v: s.v * rnd(0.25, 0.6), life: s.life * rnd(0.5, 0.9),
+                  decay: rnd(0.03, 0.08), t: s.t * 0.9, w: s.w * 0.7, kid: 1 });
+              }
+            }
+            /* the streak is the sprite stretched along its own travel */
+            var dx = s.x - px, dy = s.y - py, L = Math.hypot(dx, dy);
+            ctx.save();
+            ctx.translate(s.x - scrollX, s.y - scrollY);
+            ctx.rotate(Math.atan2(dy, dx));
+            ctx.globalAlpha = Math.min(1, s.life);
+            var w = s.w * 2 + L * 1.5, h = s.w * 2;
+            ctx.drawImage(band(s.t * s.life), -w / 2, -h / 2, w, h);
+            ctx.restore();
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        /* ---- the seam ------------------------------------------- *
+           One stitch every few pixels of travel, each carrying the
+           moment it was laid down. The whole array is redrawn every
+           frame, so at any instant the rectangle is a temperature
+           gradient: still white where the tip just passed, cherry a
+           second behind it, nearly out at the far end. That lag is
+           the entire difference between a cut and a glowing border. */
+        var COOL = 2300;
+        function stitch(x, y, jump) { seam.push({ x: x, y: y, born: now, j: !!jump }); }
+        /* A stroked polyline, not a row of blobs. Blobs were the first
+           attempt and they were wrong twice over: spaced a frame apart
+           they bead visibly, and being additive they pile into a white
+           tube instead of a cut. A 1px stroke whose COLOUR is the
+           temperature of the metal at that point is both cheaper and
+           far more like a kerf. The bloom is then added sparsely on top
+           as the heat-affected zone either side of the cut, which is
+           what it actually is. */
+        function heatAt(s) {
+          var age = (now - s.born) / COOL;
+          var t = age >= 1 ? 0 : 1 - Math.pow(age, 0.62);
+          return Math.min(1, t + flare * 0.5);
+        }
+        /* Drawn as ONE gradient-stroked polyline per run, not as a
+           row of sprites and not segment by segment.
+
+           Both earlier attempts beaded, and the pixels said exactly
+           why: sampling straight down a cooled edge gave brightness
+           oscillating 422-450-422 on a period of eight device pixels,
+           which is the stitch spacing to the pixel. Any per-point
+           renderer has that ripple in it somewhere, and on a near
+           black page the eye finds a regular ripple instantly and
+           calls it a dotted line.
+
+           A canvas linear gradient has no periodic structure at all.
+           Each run is straight, so one gradient down its length with a
+           dozen stops sampled from the seam's own temperatures gives a
+           perfectly smooth cool, and costs seven gradients and
+           fourteen strokes a frame instead of seven hundred draws. */
+        /* Drawn as gradient-stroked polylines, one set per run, not
+           as a row of sprites and not segment by segment.
+
+           Two earlier attempts beaded, and the pixels said exactly
+           why: sampling straight down a cooled edge gave brightness
+           oscillating 422-450-422 on a period of eight device pixels,
+           which is the stitch spacing to the pixel. Any per-point
+           renderer carries that ripple somewhere, and on a near black
+           page the eye finds a regular ripple instantly and calls it a
+           dotted line.
+
+           A canvas linear gradient has no periodic structure at all.
+           Each run is straight, so one gradient down its length with a
+           dozen stops sampled from the seam's own temperatures gives a
+           perfectly smooth cool.
+
+           A single stroke has hard edges and no falloff, so the glow
+           is faked by stacking three of them, wide and faint through
+           narrow and bright. Four strokes over seven runs is twenty
+           eight draws a frame, against about seven hundred for the
+           sprite version it replaced. */
+        var LAYERS = [
+          { w: 18.0, a: 0.042 },
+          { w: 10.0, a: 0.070 },
+          { w: 4.8,  a: 0.115 }
+        ];
+        function runColor(f, a) {
+          if (f > 0.10) {
+            var c = hue(f);
+            return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," +
+                   (a * (0.25 + f * 0.75)).toFixed(4) + ")";
+          }
+          /* Below the Draper point there is no glow left to show, so
+             the ember is cross-dissolved into the page's own gold
+             rather than interpolated toward it. Interpolating passes
+             through mud, and mud is the most visible cheat here. */
+          var k = f / 0.10;
+          if (a < 0.9) return "rgba(196,102,54," + (a * 0.25 * k).toFixed(4) + ")";
+          return "rgba(" +
+            Math.round(88 * k + 201 * (1 - k)) + "," +
+            Math.round(30 * k + 168 * (1 - k)) + "," +
+            Math.round(16 * k + 92 * (1 - k)) + "," +
+            (0.9 * k + 0.4 * (1 - k)).toFixed(3) + ")";
+        }
+        function strokeRun(i0, i1, width, alpha) {
+          var a = seam[i0], b = seam[i1];
+          var ax = a.x - scrollX, ay = a.y - scrollY;
+          var bx = b.x - scrollX, by = b.y - scrollY;
+          if (Math.max(ax, bx) < -70 || Math.min(ax, bx) > VW + 70) return;
+          if (Math.max(ay, by) < -70 || Math.min(ay, by) > VH + 70) return;
+          var n = Math.min(12, i1 - i0), g, k, f, hottest = 0;
+          if (n < 1) return;
+          g = ctx.createLinearGradient(ax, ay, bx, by);
+          for (k = 0; k <= n; k++) {
+            f = heatAt(seam[i0 + Math.round((k / n) * (i1 - i0))]);
+            if (f > hottest) hottest = f;
+            g.addColorStop(k / n, runColor(f, alpha));
+          }
+          ctx.strokeStyle = g;
+          /* The glowing band either side of a real kerf is wider where
+             the metal is hottest, so width tracks the hottest point on
+             this run. A constant-width halo is the neon-tube look. */
+          ctx.lineWidth = alpha > 0.9
+            ? (hottest > 0.46 ? 2.0 : 1.4)
+            : width * (0.30 + hottest * 0.70);
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
+        }
+        function drawSeam() {
+          if (seam.length < 2) return;
+          ctx.lineCap = "round";
+          var i = 0, j, L;
+          while (i < seam.length) {
+            for (j = i; j + 1 < seam.length && !seam[j + 1].j; j++) {}
+            if (j > i) {
+              /* the heat-affected zone first, additive and in three
+                 widths so it has a falloff, then the kerf itself on
+                 top in normal blend so the coolest stretch stays
+                 genuinely red instead of washing toward white */
+              ctx.globalCompositeOperation = "lighter";
+              for (L = 0; L < LAYERS.length; L++) {
+                strokeRun(i, j, LAYERS[L].w, LAYERS[L].a);
+              }
+              ctx.globalCompositeOperation = "source-over";
+              strokeRun(i, j, 0, 1);
+            }
+            i = j + 1;
+          }
+        }
+
+        /* ---- the walk ------------------------------------------- *
+           Constant speed. The duration of each side falls out of its
+           length, which is the whole point. On top of that: a ramp off
+           each corner, a longer ramp into the next one (people and
+           machines both brake earlier than they launch), and a slow
+           drift that is the operator's arm rather than the tool. */
+        var SPEED = 0.72;       /* px per ms, nominal */
+        function pace(u, t) {
+          var out = u < 0.08 ? 0.30 + 0.70 * (u / 0.08) : 1;
+          var into = u > 0.88 ? 0.28 + 0.72 * ((1 - u) / 0.12) : 1;
+          return out * into * (1 + 0.12 * Math.sin(t * 0.0044));
+        }
+        /* Physiological tremor, 8 to 12 Hz, sub-pixel, perpendicular
+           to travel, and applied to the TORCH only. The cut it leaves
+           behind stays true, or the rectangle reads as sloppy rather
+           than as hand-held. Two frequencies that do not divide into
+           each other, so it never visibly repeats. */
+        function tremor(t) {
+          return 0.45 * Math.sin(t * 0.0590) + 0.22 * Math.sin(t * 0.0748 + 1.7);
+        }
+
+        /* ---- the fall ------------------------------------------- *
+           The ember does not appear. It leaves the light-bar the
+           instant the sweep lands, curves onto the head of the first
+           card's rule, runs the length of it, and drops off the end.
+           Michotte's window for one thing reading as the cause of
+           another is about 70ms; this hands off inside one frame. */
+        var FALL = [];
+        function planFall() {
+          function box(el) {
+            if (!el) return null;
+            var r = el.getBoundingClientRect();
+            return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height };
+          }
+          var tip = box(document.getElementById("lightbar-tip"));
+          var one = box(document.querySelector(".entry"));
+          var g = pageBox();
+          var start = tip ? { x: tip.x + tip.w / 2, y: tip.y + tip.h / 2 }
+                          : { x: g.x, y: g.y - 260 };
+          var railTop = one ? { x: one.x, y: one.y + 6 } : { x: g.x, y: g.y - 160 };
+          var railEnd = one ? { x: one.x, y: one.y + one.h - 4 } : { x: g.x, y: g.y - 40 };
+          var pierce  = { x: g.x, y: g.y };
+          FALL = [
+            { a: start,   b: railTop, ms: 380, bow: 34,  heat: 0.34 },
+            { a: railTop, b: railEnd, ms: Math.max(230, Math.abs(railEnd.y - railTop.y) / 1.05), bow: 0, heat: 0.46 },
+            { a: railEnd, b: pierce,  ms: 260, bow: -16, heat: 0.62 }
+          ];
+        }
+        function along(seg, u) {
+          /* a quadratic bow, so a two-axis move arcs and a straight
+             run down the rule does not */
+          var x = seg.a.x + (seg.b.x - seg.a.x) * u;
+          var y = seg.a.y + (seg.b.y - seg.a.y) * u;
+          var k = 4 * u * (1 - u);
+          return { x: x + seg.bow * k, y: y };
+        }
+        function ease(u) { return u * u * (3 - 2 * u); }
+
+        /* ---- the gate ------------------------------------------- *
+           The cut does not play to the back of a scrolling phone. The
+           ember arrives on the chain, because that is the hand-off and
+           it is quiet and cheap. Then it sits at the corner and gets
+           hot for as long as it takes, and only bites once the card is
+           actually being looked at. The wait is the preheat, which is
+           what a real cut opens with anyway. */
+        if (window.IntersectionObserver) {
+          var io = new IntersectionObserver(function (es) {
+            if (es[0] && es[0].isIntersecting) { seen = true; io.disconnect(); }
+          }, { threshold: 0.4 });
+          io.observe(card);
+        } else { seen = true; }
+
+        /* ---- the loop ------------------------------------------- */
+        var now = 0, flare = 0, pause = 0, fresh = true, laid = 0;
+        function frame(ts) {
+          if (!burning) return;
+          raf = requestAnimationFrame(frame);
+          now = ts;
+          var dt = last ? Math.min(48, ts - last) : 16;
+          last = ts;
+          pt += dt;
+
+          /* Fade what is already on the surface by multiplying its
+             alpha down. Never a black rectangle: this canvas has the
+             whole live page behind it. */
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.fillStyle = "rgba(0,0,0,0.30)";
+          ctx.fillRect(0, 0, VW, VH);
+          ctx.globalCompositeOperation = "lighter";
+
+          if (phase === "fall") {
+            var acc = 0, seg = null, u = 0;
+            for (var i = 0; i < FALL.length; i++) {
+              if (pt < acc + FALL[i].ms) { seg = FALL[i]; u = (pt - acc) / FALL[i].ms; break; }
+              acc += FALL[i].ms;
+            }
+            if (!seg) { phase = "heat"; pt = 0; }
+            else {
+              var p = along(seg, seg.bow ? ease(u) : u);
+              head.x = p.x; head.y = p.y;
+              hot = seg.heat + (seg.heat > 0.5 ? u * 0.16 : 0);
+              lit = 1;
+              if (Math.random() < 0.09) spark(head.x, head.y, Math.PI / 2, 1, 0.5);
+            }
+          } else if (phase === "heat") {
+            /* preheat: it brightens, breathes, and throws almost
+               nothing, because nothing is being cut yet */
+            hot = 0.62 + 0.30 * (0.5 + 0.5 * Math.sin(pt * 0.006)) * Math.min(1, pt / 900);
+            lit = 1;
+            if (Math.random() < 0.03) spark(head.x, head.y, Math.PI / 2, 1, 0.35);
+            if (seen && pt > 430) {
+              phase = "cut"; pt = 0; ri = 0; rd = 0; laid = 0;
+              geo = pageBox();
+              RUNS = runs(geo.w, geo.h);
+              spark(head.x, head.y, Math.PI / 2, 26, 1.5);   /* the bite */
+            }
+          } else if (phase === "cut") {
+            if (pause > 0) {
+              pause -= dt;
+              lit = Math.max(0, lit - dt / 160);             /* the torch lifts */
+              hot = 0.5;
+              if (pause <= 0) spark(head.x, head.y, Math.PI / 2, 14, 1.2);
+            } else {
+              lit = Math.min(1, lit + dt / 120);
+              var run = RUNS[ri];
+              var u2 = run.len ? rd / run.len : 1;
+              rd += SPEED * pace(u2, ts) * dt;
+              if (rd >= run.len) {
+                rd = 0; ri++; fresh = true; laid = 0;
+                if (ri >= RUNS.length) {
+                  phase = "give"; pt = 0; flare = 1;
+                  spark(geo.x, geo.y, Math.PI / 2, 20, 1.1);
+                  /* The loop is closed, so schedule the three tabs to
+                     let go. Shuffled, and 0/26/54ms apart: evenly
+                     spaced and in order they read as a sequence
+                     someone programmed. */
+                  var ord = [0, 1, 2];
+                  for (var q = 2; q > 0; q--) {
+                    var w2 = (Math.random() * (q + 1)) | 0;
+                    var tmp = ord[q]; ord[q] = ord[w2]; ord[w2] = tmp;
+                  }
+                  [0, 26, 54].forEach(function (d, n) {
+                    if (TABS[ord[n]]) TABS[ord[n]].at = 280 + d;
+                  });
+                } else if (RUNS[ri].lift) {
+                  pause = 150;                                /* jump the tab */
+                }
+              }
+              if (phase === "cut" && !pause) {
+                run = RUNS[ri];
+                var uu = run.len ? rd / run.len : 0;
+                var ax = run.pts[0][0], ay = run.pts[0][1];
+                var bx = run.pts[1][0], by = run.pts[1][1];
+                var dx = bx - ax, dy = by - ay, L = run.len || 1;
+                var cx = ax + dx * uu, cy = ay + dy * uu;
+                /* Lay the seam down every 4px of TRAVEL, not once per
+                   frame. One per frame ties the seam's density to the
+                   frame rate and to the cut speed, and at this speed
+                   that is a point every twelve pixels, which the glow
+                   turns into a visibly dotted line. Distance-stepped,
+                   it looks the same on a 60Hz phone and a 120Hz one. */
+                var STEP = 4;
+                while (laid + STEP <= rd) {
+                  laid += STEP;
+                  var ul = laid / L;
+                  stitch(geo.x + ax + dx * ul, geo.y + ay + dy * ul, fresh);
+                  fresh = false;
+                }
+                /* the tool wanders, the cut it leaves does not */
+                var tr = tremor(ts);
+                head.x = geo.x + cx - (dy / L) * tr;
+                head.y = geo.y + cy + (dx / L) * tr;
+                hot = 1;
+                /* sparks throw back down the line and toward the
+                   viewer, never forward along the direction of travel */
+                if (Math.random() < 0.62) {
+                  spark(head.x, head.y, Math.atan2(-dy, -dx) + rnd(-0.5, 0.5), 2, 1);
+                }
+                if (Math.random() < 0.30) {
+                  spark(head.x, head.y, Math.PI / 2 + rnd(-0.6, 0.6), 1, 0.8);
+                }
+              }
+            }
+          } else if (phase === "give") {
+            lit = Math.max(0, lit - dt / 220);
+            /* The beat. Nothing new arrives for a moment and the head
+               dims and drifts off, while the perimeter is visibly
+               cooling. A held frame with something cooling in it reads
+               as a beat; a held frame with nothing moving reads as a
+               hang, and they are the same length. */
+            if (pt > 60) {
+              head.y -= dt * 0.014; head.x -= dt * 0.010;
+            }
+            /* Then the tabs go, one at a time and slightly out of
+               order, because material failing is not a switch being
+               thrown. Each throws its own sparks outward, away from
+               the piece it was holding. */
+            for (var ti = 0; ti < TABS.length; ti++) {
+              var tb = TABS[ti];
+              if (!tb.gone && pt >= tb.at) {
+                tb.gone = ts;
+                spark(geo.x + tb.x, geo.y + tb.y, tb.dir, 8, 1.25);
+              }
+              if (tb.gone && ts - tb.gone < 110) {
+                var ta = 1 - (ts - tb.gone) / 110;
+                blit(geo.x + tb.x - scrollX, geo.y + tb.y - scrollY,
+                     3 + ta * 7, 1, 0.75 * ta);
+              }
+            }
+            /* and only now does the slug let go */
+            if (pt > 372 && !revealAt) {
+              revealAt = ts;
+              open();   /* draws the cold hairline too, which then rises
+                           underneath the fire as the fire goes out */
+            }
+            if (pt > 700) { phase = "cool"; pt = 0; coolFrom = ts; }
+          } else if (phase === "cool") {
+            lit = 0;
+            if (pt > COOL + 500) { stop(); return; }
+          }
+
+          flare = Math.max(0, flare - dt / 420);
+          drawSeam();
+          stepSparks(dt);
+
+          /* The torch. Three draws of two sprites, in this order:
+
+             The cast-light pool first, in normal blend and very faint.
+             It is the light the flame throws onto the page around it.
+             Without it the torch is a sticker sitting on a photograph,
+             and it is the cheapest thing in the whole file.
+
+             Then the bloom and the core, both additive, both the same
+             achromatic-warm sprite at two scales. The core is where
+             the white lives. It does NOT come from the colour ramp,
+             because steel this side of about 1950K has no blue in it
+             at all and cannot be white; the white is the camera, and
+             the camera is this bloom. */
+          if (lit > 0.01) {
+            var hx = head.x - scrollX, hy = head.y - scrollY;
+            var pulse = 0.92 + 0.08 * Math.sin(ts * 0.031);
+            ctx.globalCompositeOperation = "source-over";
+            ctx.globalAlpha = 0.055 * lit;
+            ctx.drawImage(bloom, hx - 34, hy - 21, 68, 42);
+            ctx.globalCompositeOperation = "lighter";
+            ctx.globalAlpha = 0.42 * lit * pulse * Math.min(1, hot + 0.25);
+            var br = 26 * lit;
+            ctx.drawImage(bloom, hx - br, hy - br, br * 2, br * 2);
+            ctx.globalAlpha = 0.95 * lit * pulse;
+            ctx.drawImage(bloom, hx - 3.4, hy - 3.4, 6.8, 6.8);
+            ctx.globalAlpha = 1;
+          }
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        /* A backgrounded tab stops firing frames, and coming back with
+           a stale clock would jump the whole sequence forward. */
+        addEventListener("visibilitychange", function () { last = 0; });
+
+        /* ---- ignition ------------------------------------------- *
+           The light-bar's travel starts at 1550 and runs for 3600, so
+           it lands at 5150. The ember leaves at 4800, while the sweep
+           is still resolving its last 350ms. That overlap is on
+           purpose. Waiting for A to finish before starting B leaves a
+           seam the eye can find; a viewer reads one motion as having
+           caused another only inside about 70ms, and the surer way to
+           get there is to have no gap at all. The follow-through of
+           the sweep and the anticipation of the cut are the same
+           moment. */
+        setTimeout(function () {
+          if (opened) return;
+          planFall();
+          geo = pageBox();
+          burning = true; phase = "fall"; pt = 0; last = 0;
+          raf = requestAnimationFrame(frame);
+        }, 4800);
       })();
     })();
     </script>

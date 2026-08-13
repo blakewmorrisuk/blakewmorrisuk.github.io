@@ -175,6 +175,133 @@ a { color: var(--amber); }
     .entry-desc { text-align-last: justify; }
 }
 
+/* ---- N° 02: the card that is cut rather than engraved --------------
+   The first entry hangs off a single hairline. This one is enclosed by
+   four, because it was opened out of the page rather than drawn onto
+   it. The left edge keeps the first card's weight so the two still
+   rhyme; the other three sides are the fainter page rule, since they
+   are a cut and not a margin.
+
+   Three surfaces, stacked, in this order and for these reasons:
+     .cut-fire   canvas. The whole performance: the travelling ember,
+                 the torch core, the glowing kerf and the sparks. It is
+                 oversized by --bleed on every side so a bloom or a
+                 spark leaving the rectangle is not clipped. It exists
+                 only while it is burning and is removed afterward.
+     .cut-kerf   a static SVG. The resting state, once cool. Vector, so
+                 it stays a true hairline at any density, and it is the
+                 only one of the three that survives the animation.
+     .entry      the card. Always in the document, always in the tab
+                 order. The seal below is opacity, nothing more. */
+.cut {
+    position: relative;
+    max-width: 470px;
+    margin: 46px auto 0;
+    perspective: 900px;
+    /* The frame with no script running at all: a plain closed
+       rectangle, no tabs, at the page's own weights. Script replaces
+       it with the real cut one and turns this off. Something has to
+       hold the shape here, because .entry--cut gives up the left rule
+       that every other entry hangs from. */
+    border: 1px solid rgba(201, 168, 92, 0.22);
+    border-left-color: rgba(201, 168, 92, 0.4);
+}
+.cut.has-kerf { border-color: transparent; }
+/* The slug. Barely a surface: a shallow diagonal sheen a couple of
+   percent above the page, which is nothing until it moves. When the
+   tabs let go it tips forward off its top edge and drops three pixels,
+   and that is the instant the rectangle stops being a line someone
+   drew and becomes a piece of the page that came loose. */
+.cut-plate {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    transform-origin: 50% 0;
+    background: linear-gradient(163deg,
+        rgba(232, 228, 216, 0.034),
+        rgba(232, 228, 216, 0.007) 54%,
+        rgba(232, 228, 216, 0.021));
+    transition: opacity .34s ease, transform .38s cubic-bezier(.05, .7, .1, 1);
+}
+.cut:not(.is-sealed) .cut-plate {
+    opacity: 0;
+    transform: translateY(3px) rotateX(2.4deg);
+}
+/* The fire is a FIXED, full-viewport canvas, the same as the two
+   etching canvases already are, and for the same reason. An absolutely
+   positioned canvas sized to the card plus a bleed for the glow does
+   contribute to scrollWidth, and it put a horizontal scrollbar on every
+   phone width. Fixed and full-viewport it cannot affect layout at all,
+   nothing clips a spark that leaves the rectangle, and the rectangle's
+   position is simply read from the card each frame, which the animation
+   has to do anyway to survive a scroll. It sits above the page rather
+   than behind it, because sparks pass in FRONT of the type. */
+#cut-fire {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 3;
+    pointer-events: none;
+}
+.cut-kerf {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    fill: none;
+    pointer-events: none;
+}
+/* Cold. The state a visitor finds ten seconds later, and the state a
+   visitor who never saw it burn finds immediately. */
+.cut-kerf .kerf-line {
+    stroke: rgba(201, 168, 92, 0.22);
+    stroke-width: 1;
+}
+.cut-kerf .kerf-left {
+    stroke: rgba(201, 168, 92, 0.4);
+}
+.entry--cut {
+    max-width: none;
+    margin: 0;
+    border-left: 0;
+    padding: 20px 24px 22px 24px;
+    position: relative;
+    z-index: 0;
+    transform: none;
+    transition: opacity .72s ease, transform .72s cubic-bezier(.05, .7, .1, 1);
+}
+/* Sealed: the slug is still in the way. Presentation only. The card
+   stays in the document, in the tab order, and readable by a crawler
+   throughout. It arrives with a few pixels of upward drift, as
+   something being lit rather than something fading in. */
+.cut.is-sealed .entry--cut {
+    opacity: 0;
+    transform: translateY(5px);
+}
+/* NOTE the absence of pointer-events: none here, which was the first
+   thing written and was wrong. iOS VoiceOver activates a link by
+   synthesising a hit-tested touch at the element's own coordinates,
+   and pointer-events: none blocks exactly that: the tap lands on the
+   wrapper instead, the visitor hears nothing happen and does not go
+   anywhere. Since this link is read out from the first byte, and the
+   phone inside the Instagram browser is the case that matters most
+   here, the link stays live the entire time it is invisible. */
+/* The hairline is drawn by script only once it has cooled, so nothing
+   outlines an empty box before the torch has been anywhere near it. */
+.cut.is-sealed .cut-kerf { opacity: 0; }
+.cut-kerf { transition: opacity .6s ease; }
+.cut-kerf .kerf-line { transition: stroke .3s ease; }
+/* Hover has to answer on the frame, because this card has no left rule
+   of its own to brighten. :has() and not a sibling combinator: the SVG
+   is painted before the card, and ~ only ever looks forward. */
+.cut:has(.entry--cut:hover) .kerf-line,
+.cut:has(.entry--cut:focus-visible) .kerf-line { stroke: rgba(224, 201, 146, 0.4); }
+.cut:has(.entry--cut:hover) .kerf-left,
+.cut:has(.entry--cut:focus-visible) .kerf-left { stroke: rgba(224, 201, 146, 0.62); }
+
 .page {
     max-width: 960px;
     margin: 0 auto;
@@ -471,6 +598,35 @@ h1.name .name-period {
 
 ::selection {
     background: rgba(201, 168, 92, 0.28);
+}
+
+/* ---- responsive overrides, and they live LAST on purpose -----------
+   A media query carries no specificity of its own. Written above the
+   rule it means to override, in the same stylesheet, it loses on source
+   order and silently does nothing. Everything that answers to a
+   viewport width goes here, at the foot, and nowhere else.
+
+   With two cards the page is taller than one phone screen. It cannot be
+   made to fit without cutting copy from one card or the other, and it
+   does not need to: the second card announces itself by dropping an
+   ember off the bottom of the screen, and it does not begin to burn
+   until it is actually in view. What this block does is tighten the
+   rhythm so the whole composition lands within one flick of a thumb
+   rather than two. */
+@media (max-width: 480px) {
+    .page { padding-top: 30px; }
+    .index-head { padding-top: 6px; }
+    .lightbar { margin: 36px auto 38px; }
+    .cut { margin-top: 38px; }
+    .m-mark { margin-top: 76px; }
+}
+
+/* Asked for no motion, given none. The script already skips the fire
+   outright; this stops the card from drifting and fading up on its way
+   to a state it is supposed to arrive in. */
+@media (prefers-reduced-motion: reduce) {
+    .entry--cut { transition: none; }
+    .cut-kerf, .cut-kerf .kerf-line { transition: none; }
 }
 
 
