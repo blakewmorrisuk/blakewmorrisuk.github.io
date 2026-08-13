@@ -19,7 +19,7 @@
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="fonts/cormorant-garamond-m.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=69">
+    <link rel="stylesheet" href="style.css?v=70">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -72,13 +72,6 @@
                     <h2 class="entry-title">Caddy</h2>
                     <p class="entry-desc">A tool for attorneys, and the first thing I have built to sell. It opens the casefile inside Word, where the drafting actually happens, so the record is a glance away instead of a folder away. It runs on the firm&rsquo;s own machine. Nothing is sent anywhere. There is no AI in it.</p>
                 </a>
-                <!-- The slug: the piece being cut out. It has to be a
-                     faintly present object rather than a black hole,
-                     or nothing is seen to leave when it goes. It tips
-                     forward off its top edge and falls, and those two
-                     or three pixels are the whole point of the effect.
-                     Until then it is what is covering the card. -->
-                <div class="cut-plate" aria-hidden="true"></div>
             </div>
         </section>
 
@@ -590,7 +583,7 @@
            fully lit while the rest of the page went dark, which is the
            one thing the light-bar must never do. */
         var governed = [];
-        [".index-head", ".entry", ".m-mark"].forEach(function (s) {
+        [".index-head", ".entry", ".cut", ".m-mark"].forEach(function (s) {
           Array.prototype.push.apply(governed, document.querySelectorAll(s));
         });
         var t = 1, span = { L: 0, R: 1 };
@@ -764,17 +757,28 @@
             kerf = document.getElementById("cut-kerf"),
             cv   = document.getElementById("cut-fire");
         if (!cut || !card || !kerf || !cv) return;
+        /* Tells the stylesheet a script is running, which retires the
+           plain CSS rectangle that exists only for the case where one
+           is not. Done on the first line so the fallback never flashes. */
+        cut.classList.add("js");
 
         /* ---- the one thing that cannot fail ---------------------- */
         var opened = false, burning = false, raf = 0;
         function open() {
           if (opened) return;
           opened = true;
-          drawKerf();
-          cut.classList.remove("is-sealed");
+          cut.classList.remove("is-sealed", "is-cutting");
         }
+        /* The static hairline is drawn ONLY at the very end, as the fire
+           canvas is freed. Drawing it at reveal time put a finished,
+           tabbed gold rectangle on the page before the torch had cut a
+           single edge of it. While the cut is running the canvas is
+           already painting the cooled seam in exactly this colour, so
+           there is nothing for the SVG to add until it takes over. */
         function stop() {
           burning = false;
+          if (wd) clearInterval(wd);
+          drawKerf();
           if (raf) { cancelAnimationFrame(raf); raf = 0; }
           if (cv && cv.parentNode) cv.parentNode.removeChild(cv);
           open();
@@ -794,7 +798,30 @@
            either, so it would be invisible in High Contrast too.
 
            Now the worst case is a card that did not perform. */
-        setTimeout(function () { if (!opened) stop(); }, 12000);
+        /* A watchdog rather than a fixed deadline, because a fixed one
+           is always either too eager or too slow. Too eager and it
+           reveals the card on a phone that simply has not been
+           scrolled to yet; too slow and a visitor stares at a hole in
+           the page for a minute and a half.
+
+           This asks the only two questions that matter, every 1.5s:
+           is the sequence overdue to have STARTED, and if it did
+           start, is it still producing frames? A dead loop is caught
+           in about two and a half seconds instead of thirty. The
+           document.hidden guard is there because a backgrounded tab
+           legitimately stops firing them. */
+        var wd = setInterval(function () {
+          if (opened) { clearInterval(wd); return; }
+          if (armed && seen && !burning) { stop(); return; }
+          if (burning && !document.hidden) {
+            var idle = performance.now() - (last || startedAt || 0);
+            if (idle > 2500) stop();
+          }
+        }, 1500);
+        /* And a last resort, for a browser that somehow runs none of
+           the above. Long enough that it can never pre-empt a healthy
+           sequence, which finishes in about twenty seconds. */
+        setTimeout(function () { if (!opened) stop(); }, 120000);
 
         var calm = matchMedia("(prefers-reduced-motion: reduce)");
         if (calm.matches) { stop(); return; }   /* stop, not open: also frees the canvas */
@@ -861,9 +888,7 @@
                    "L" + r.pts[1][0] + " " + r.pts[1][1] + '"/>';
           });
           kerf.innerHTML = out;
-          /* Only now drop the plain CSS rectangle that was holding the
-             shape in case none of this ever ran. */
-          cut.classList.add("has-kerf");
+
         }
         addEventListener("resize", function () { if (opened) drawKerf(); });
 
@@ -1059,7 +1084,12 @@
            gradient: still white where the tip just passed, cherry a
            second behind it, nearly out at the far end. That lag is
            the entire difference between a cut and a glowing border. */
-        var COOL = 2300;
+        /* Long, because the cut is slow now. At 0.17px/ms a 3.2s cool left
+           only the last 540px warm, so most of the rectangle had already
+           gone gold by the time the eye got to it and the whole thing
+           read as a line being drawn rather than as metal being cut.
+           5.2s keeps the better part of a side glowing behind the tip. */
+        var COOL = 5200;
         function stitch(x, y, jump) { seam.push({ x: x, y: y, born: now, j: !!jump }); }
         /* A stroked polyline, not a row of blobs. Blobs were the first
            attempt and they were wrong twice over: spaced a frame apart
@@ -1188,7 +1218,7 @@
            each corner, a longer ramp into the next one (people and
            machines both brake earlier than they launch), and a slow
            drift that is the operator's arm rather than the tool. */
-        var SPEED = 0.72;       /* px per ms, nominal */
+        var SPEED = 0.17;       /* px per ms, nominal */
         function pace(u, t) {
           var out = u < 0.08 ? 0.30 + 0.70 * (u / 0.08) : 1;
           var into = u > 0.88 ? 0.28 + 0.72 * ((1 - u) / 0.12) : 1;
@@ -1203,41 +1233,14 @@
           return 0.45 * Math.sin(t * 0.0590) + 0.22 * Math.sin(t * 0.0748 + 1.7);
         }
 
-        /* ---- the fall ------------------------------------------- *
-           The ember does not appear. It leaves the light-bar the
-           instant the sweep lands, curves onto the head of the first
-           card's rule, runs the length of it, and drops off the end.
-           Michotte's window for one thing reading as the cause of
-           another is about 70ms; this hands off inside one frame. */
-        var FALL = [];
-        function planFall() {
-          function box(el) {
-            if (!el) return null;
-            var r = el.getBoundingClientRect();
-            return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height };
-          }
-          var tip = box(document.getElementById("lightbar-tip"));
-          var one = box(document.querySelector(".entry"));
-          var g = pageBox();
-          var start = tip ? { x: tip.x + tip.w / 2, y: tip.y + tip.h / 2 }
-                          : { x: g.x, y: g.y - 260 };
-          var railTop = one ? { x: one.x, y: one.y + 6 } : { x: g.x, y: g.y - 160 };
-          var railEnd = one ? { x: one.x, y: one.y + one.h - 4 } : { x: g.x, y: g.y - 40 };
-          var pierce  = { x: g.x, y: g.y };
-          FALL = [
-            { a: start,   b: railTop, ms: 380, bow: 34,  heat: 0.34 },
-            { a: railTop, b: railEnd, ms: Math.max(230, Math.abs(railEnd.y - railTop.y) / 1.05), bow: 0, heat: 0.46 },
-            { a: railEnd, b: pierce,  ms: 260, bow: -16, heat: 0.62 }
-          ];
-        }
-        function along(seg, u) {
-          /* a quadratic bow, so a two-axis move arcs and a straight
-             run down the rule does not */
-          var x = seg.a.x + (seg.b.x - seg.a.x) * u;
-          var y = seg.a.y + (seg.b.y - seg.a.y) * u;
-          var k = 4 * u * (1 - u);
-          return { x: x + seg.bow * k, y: y };
-        }
+        /* ---- the shape of the opening --------------------------- *
+           Struck at the middle, led out to the corner, then round.
+           Slow on purpose: this is a personal page and the cut is the
+           point, so the perimeter takes about ten seconds rather than
+           the three and a half it used to. Speed is still constant, so
+           a long edge simply takes longer than a short one. */
+        var ARRIVE_MS = 1150, LEAD_MS = 1350, BITE_MS = 560;
+
         function ease(u) { return u * u * (3 - 2 * u); }
 
         /* ---- the gate ------------------------------------------- *
@@ -1249,7 +1252,7 @@
            what a real cut opens with anyway. */
         if (window.IntersectionObserver) {
           var io = new IntersectionObserver(function (es) {
-            if (es[0] && es[0].isIntersecting) { seen = true; io.disconnect(); }
+            if (es[0] && es[0].isIntersecting) { seen = true; io.disconnect(); ignite(); }
           }, { threshold: 0.4 });
           io.observe(card);
         } else { seen = true; }
@@ -1272,31 +1275,48 @@
           ctx.fillRect(0, 0, VW, VH);
           ctx.globalCompositeOperation = "lighter";
 
-          if (phase === "fall") {
-            var acc = 0, seg = null, u = 0;
-            for (var i = 0; i < FALL.length; i++) {
-              if (pt < acc + FALL[i].ms) { seg = FALL[i]; u = (pt - acc) / FALL[i].ms; break; }
-              acc += FALL[i].ms;
-            }
-            if (!seg) { phase = "heat"; pt = 0; }
-            else {
-              var p = along(seg, seg.bow ? ease(u) : u);
-              head.x = p.x; head.y = p.y;
-              hot = seg.heat + (seg.heat > 0.5 ? u * 0.16 : 0);
-              lit = 1;
-              if (Math.random() < 0.09) spark(head.x, head.y, Math.PI / 2, 1, 0.5);
-            }
-          } else if (phase === "heat") {
-            /* preheat: it brightens, breathes, and throws almost
-               nothing, because nothing is being cut yet */
-            hot = 0.62 + 0.30 * (0.5 + 0.5 * Math.sin(pt * 0.006)) * Math.min(1, pt / 900);
+          if (phase === "arrive") {
+            /* The torch does not travel in from anywhere. It comes to
+               be at the middle of the plate, the way a light does when
+               somebody strikes one: nothing, then a dim point, then
+               heat. Riding an ember down from the light-bar was the
+               first idea and it was the wrong one; it made the whole
+               thing a delivery rather than an arrival. */
+            var u = Math.min(1, pt / ARRIVE_MS);
+            head.x = geo.x + geo.w / 2;
+            head.y = geo.y + geo.h / 2;
+            lit = ease(u);
+            hot = 0.26 + 0.36 * u + 0.05 * Math.sin(pt * 0.0068) * u;
+            if (Math.random() < 0.020 * u) spark(head.x, head.y, Math.PI / 2, 1, 0.30);
+            if (pt >= ARRIVE_MS) { phase = "lead"; pt = 0; }
+          } else if (phase === "lead") {
+            /* Out to the corner on the diagonal. A cutter pierces in
+               the scrap and leads out to the line, because the pierce
+               crater is ugly and has no business on a finished edge.
+               It lays NO seam on the way: a lead-in that cooled to
+               gold would leave a permanent diagonal scar across the
+               inside of the card. */
+            var e = ease(Math.min(1, pt / LEAD_MS));
+            head.x = geo.x + (geo.w / 2) * (1 - e);
+            head.y = geo.y + (geo.h / 2) * (1 - e);
             lit = 1;
-            if (Math.random() < 0.03) spark(head.x, head.y, Math.PI / 2, 1, 0.35);
-            if (seen && pt > 430) {
+            hot = 0.62 + 0.26 * e;
+            if (Math.random() < 0.10) spark(head.x, head.y, Math.PI / 2, 1, 0.45);
+            if (pt >= LEAD_MS) { phase = "bite"; pt = 0; }
+          } else if (phase === "bite") {
+            /* Preheat. A real torch cannot cut until the steel reaches
+               kindling temperature, so the anticipation beat here is
+               not a stylistic pause, it is the thing actually
+               happening. */
+            head.x = geo.x; head.y = geo.y;
+            lit = 1;
+            hot = 0.88 + 0.12 * Math.min(1, pt / BITE_MS);
+            if (Math.random() < 0.05) spark(head.x, head.y, Math.PI / 2, 1, 0.4);
+            if (pt >= BITE_MS) {
               phase = "cut"; pt = 0; ri = 0; rd = 0; laid = 0;
-              geo = pageBox();
               RUNS = runs(geo.w, geo.h);
-              spark(head.x, head.y, Math.PI / 2, 26, 1.5);   /* the bite */
+              cut.classList.add("is-cutting");
+              spark(head.x, head.y, Math.PI / 2, 24, 1.45);
             }
           } else if (phase === "cut") {
             if (pause > 0) {
@@ -1327,7 +1347,7 @@
                     if (TABS[ord[n]]) TABS[ord[n]].at = 280 + d;
                   });
                 } else if (RUNS[ri].lift) {
-                  pause = 150;                                /* jump the tab */
+                  pause = 260;                                /* jump the tab */
                 }
               }
               if (phase === "cut" && !pause) {
@@ -1442,22 +1462,22 @@
         addEventListener("visibilitychange", function () { last = 0; });
 
         /* ---- ignition ------------------------------------------- *
-           The light-bar's travel starts at 1550 and runs for 3600, so
-           it lands at 5150. The ember leaves at 4800, while the sweep
-           is still resolving its last 350ms. That overlap is on
-           purpose. Waiting for A to finish before starting B leaves a
-           seam the eye can find; a viewer reads one motion as having
-           caused another only inside about 70ms, and the surer way to
-           get there is to have no gap at all. The follow-through of
-           the sweep and the anticipation of the cut are the same
-           moment. */
-        setTimeout(function () {
-          if (opened) return;
-          planFall();
+           Two conditions, and BOTH have to hold. The light-bar's
+           travel starts at 1550 and runs for 3600, so nothing here
+           may happen before it lands. And the card has to actually be
+           on a screen somebody is looking at, or the one good thing on
+           this page plays to the back of a scrolling phone.
+
+           Nothing is drawn, and nothing exists, until then. */
+        var armed = false, startedAt = 0;
+        function ignite() {
+          if (opened || burning || !armed || !seen) return;
           geo = pageBox();
-          burning = true; phase = "fall"; pt = 0; last = 0;
+          burning = true; phase = "arrive"; pt = 0; last = 0;
+          startedAt = performance.now();
           raf = requestAnimationFrame(frame);
-        }, 4800);
+        }
+        setTimeout(function () { armed = true; ignite(); }, 4900);
       })();
     })();
     </script>

@@ -198,45 +198,27 @@ a { color: var(--amber); }
     max-width: 470px;
     margin: 46px auto 0;
     perspective: 900px;
-    /* The frame with no script running at all: a plain closed
-       rectangle, no tabs, at the page's own weights. Script replaces
-       it with the real cut one and turns this off. Something has to
-       hold the shape here, because .entry--cut gives up the left rule
-       that every other entry hangs from. */
+}
+/* The frame for the case where no script runs at all: a plain closed
+   rectangle, no tabs, at the page's own weights. It is scoped to
+   :not(.js) so that when a script IS running there is nothing here at
+   all until the torch cuts it. Something has to hold the shape in the
+   no-script case, because .entry--cut gives up the left rule that
+   every other entry hangs from. */
+.cut:not(.js) {
     border: 1px solid rgba(201, 168, 92, 0.22);
     border-left-color: rgba(201, 168, 92, 0.4);
-}
-.cut.has-kerf { border-color: transparent; }
-/* The slug. Barely a surface: a shallow diagonal sheen a couple of
-   percent above the page, which is nothing until it moves. When the
-   tabs let go it tips forward off its top edge and drops three pixels,
-   and that is the instant the rectangle stops being a line someone
-   drew and becomes a piece of the page that came loose. */
-.cut-plate {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    transform-origin: 50% 0;
-    background: linear-gradient(163deg,
-        rgba(232, 228, 216, 0.034),
-        rgba(232, 228, 216, 0.007) 54%,
-        rgba(232, 228, 216, 0.021));
-    transition: opacity .34s ease, transform .38s cubic-bezier(.05, .7, .1, 1);
-}
-.cut:not(.is-sealed) .cut-plate {
-    opacity: 0;
-    transform: translateY(3px) rotateX(2.4deg);
 }
 /* The fire is a FIXED, full-viewport canvas, the same as the two
    etching canvases already are, and for the same reason. An absolutely
    positioned canvas sized to the card plus a bleed for the glow does
-   contribute to scrollWidth, and it put a horizontal scrollbar on every
-   phone width. Fixed and full-viewport it cannot affect layout at all,
-   nothing clips a spark that leaves the rectangle, and the rectangle's
-   position is simply read from the card each frame, which the animation
-   has to do anyway to survive a scroll. It sits above the page rather
-   than behind it, because sparks pass in FRONT of the type. */
+   contribute to scrollWidth, and it put a horizontal scrollbar on
+   every phone width. Fixed and full-viewport it cannot affect layout
+   at all, nothing clips a spark that leaves the rectangle, and the
+   rectangle's position is simply read from the card each frame, which
+   the animation has to do anyway to survive a scroll. It sits above
+   the page rather than behind it, because sparks pass in FRONT of the
+   type. Losing this rule puts a 2000px canvas in the page flow. */
 #cut-fire {
     position: fixed;
     inset: 0;
@@ -245,6 +227,7 @@ a { color: var(--amber); }
     z-index: 3;
     pointer-events: none;
 }
+/* Likewise: an SVG with no position is a 300x150 inline box in flow. */
 .cut-kerf {
     position: absolute;
     inset: 0;
@@ -254,15 +237,15 @@ a { color: var(--amber); }
     fill: none;
     pointer-events: none;
 }
-/* Cold. The state a visitor finds ten seconds later, and the state a
-   visitor who never saw it burn finds immediately. */
-.cut-kerf .kerf-line {
-    stroke: rgba(201, 168, 92, 0.22);
-    stroke-width: 1;
-}
-.cut-kerf .kerf-left {
-    stroke: rgba(201, 168, 92, 0.4);
-}
+
+/* NOTE there is no plate, panel or slug element here, and that is
+   deliberate. There was one: a diagonal sheen a couple of percent
+   above the page, so that the piece being cut out could be seen to
+   tip forward and drop when the tabs let go. It was the best idea in
+   the whole effect and it is gone, because it meant the inside of the
+   rectangle was a different black from the page around it, and it
+   showed before the torch had done anything. The inside of this
+   rectangle is the page. Always, and at every moment. */
 .entry--cut {
     max-width: none;
     margin: 0;
