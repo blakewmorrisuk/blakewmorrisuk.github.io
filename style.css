@@ -186,17 +186,11 @@ a { color: var(--amber); }
    rhyme; the other three sides are the fainter page rule, since they
    are a cut and not a margin.
 
-   Three surfaces, stacked, in this order and for these reasons:
-     .cut-fire   canvas. The whole performance: the travelling ember,
-                 the torch core, the glowing kerf and the sparks. It is
-                 oversized by --bleed on every side so a bloom or a
-                 spark leaving the rectangle is not clipped. It exists
-                 only while it is burning and is removed afterward.
-     .cut-kerf   a static SVG. The resting state, once cool. Vector, so
-                 it stays a true hairline at any density, and it is the
-                 only one of the three that survives the animation.
+   Two elements, and that is all:
+     .cut-kerf   the SVG the rectangle is burned in, and left in. A
+                 child of the card, so the browser positions it.
      .entry      the card. Always in the document, always in the tab
-                 order. The seal below is opacity, nothing more. */
+                 order. The seal is opacity, nothing more. */
 .cut {
     position: relative;
     max-width: 470px;
@@ -213,25 +207,24 @@ a { color: var(--amber); }
     border: 1px solid rgba(201, 168, 92, 0.22);
     border-left-color: rgba(201, 168, 92, 0.4);
 }
-/* The fire is a FIXED, full-viewport canvas, the same as the two
-   etching canvases already are, and for the same reason. An absolutely
-   positioned canvas sized to the card plus a bleed for the glow does
-   contribute to scrollWidth, and it put a horizontal scrollbar on
-   every phone width. Fixed and full-viewport it cannot affect layout
-   at all, nothing clips a spark that leaves the rectangle, and the
-   rectangle's position is simply read from the card each frame, which
-   the animation has to do anyway to survive a scroll. It sits above
-   the page rather than behind it, because sparks pass in FRONT of the
-   type. Losing this rule puts a 2000px canvas in the page flow. */
-#cut-fire {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 3;
-    pointer-events: none;
-}
-/* Likewise: an SVG with no position is a 300x150 inline box in flow. */
+/* The burn lives in this SVG, which is a child of the card and is
+   therefore positioned by the browser, exactly like everything else on
+   the page. Nothing about it is computed.
+
+   It used to be painted on a fixed, full-viewport canvas whose every
+   point was placed by arithmetic: a bounding rect plus scroll offsets,
+   scaled by devicePixelRatio, against innerWidth and innerHeight. That
+   agrees with the card only while the layout viewport and the visual
+   viewport agree, and on a phone in an in-app browser they part company
+   the moment the toolbar collapses. The result on a real iPhone was two
+   rectangles about fifty pixels apart, which no headless browser ever
+   reproduced, because a headless browser has no toolbar. Do not put it
+   back on a canvas.
+
+   NOTE the absence of an is-sealed rule here. The kerf is not the
+   resting state any more, it is the burn itself, so hiding it while the
+   card is sealed would hide the entire animation. It is empty until the
+   script builds it, which is why nothing shows before the torch. */
 .cut-kerf {
     position: absolute;
     inset: 0;
@@ -241,6 +234,12 @@ a { color: var(--amber); }
     fill: none;
     pointer-events: none;
 }
+/* Strokes are set as presentation attributes by the script, one per
+   layer, so there is no base stroke rule here to fight with them. These
+   two exist only to answer hover, where CSS is supposed to win. */
+.cut-kerf .kerf-cold { transition: stroke .3s ease; }
+.cut:has(.entry--cut:hover) .kerf-cold,
+.cut:has(.entry--cut:focus-visible) .kerf-cold { stroke: rgba(224, 201, 146, 0.5); }
 
 /* NOTE there is no plate, panel or slug element here, and that is
    deliberate. There was one: a diagonal sheen a couple of percent
@@ -276,33 +275,6 @@ a { color: var(--amber); }
    anywhere. Since this link is read out from the first byte, and the
    phone inside the Instagram browser is the case that matters most
    here, the link stays live the entire time it is invisible. */
-/* The hairline is drawn by script only once it has cooled, so nothing
-   outlines an empty box before the torch has been anywhere near it. */
-/* Cold. The state a visitor finds once it has burned, and the state
-   a visitor who never saw it burn finds immediately. Deleting these
-   two rules leaves four <path> elements with no stroke, which is four
-   invisible lines and no rectangle, and it has happened twice. The
-   check in the harness asserts a NON-TRANSPARENT stroke for exactly
-   that reason. */
-.cut-kerf .kerf-line {
-    stroke: rgba(201, 168, 92, 0.22);
-    stroke-width: 1;
-}
-/* The left edge carries the weight of the rule the first card hangs
-   from, so the two entries still rhyme. */
-.cut-kerf .kerf-left {
-    stroke: rgba(201, 168, 92, 0.4);
-}
-.cut.is-sealed .cut-kerf { opacity: 0; }
-.cut-kerf { transition: opacity .6s ease; }
-.cut-kerf .kerf-line { transition: stroke .3s ease; }
-/* Hover has to answer on the frame, because this card has no left rule
-   of its own to brighten. :has() and not a sibling combinator: the SVG
-   is painted before the card, and ~ only ever looks forward. */
-.cut:has(.entry--cut:hover) .kerf-line,
-.cut:has(.entry--cut:focus-visible) .kerf-line { stroke: rgba(224, 201, 146, 0.4); }
-.cut:has(.entry--cut:hover) .kerf-left,
-.cut:has(.entry--cut:focus-visible) .kerf-left { stroke: rgba(224, 201, 146, 0.62); }
 
 .page {
     max-width: 960px;
@@ -628,7 +600,7 @@ h1.name .name-period {
    to a state it is supposed to arrive in. */
 @media (prefers-reduced-motion: reduce) {
     .entry--cut { transition: none; }
-    .cut-kerf, .cut-kerf .kerf-line { transition: none; }
+    .cut-kerf, .cut-kerf .kerf-cold { transition: none; }
 }
 
 
