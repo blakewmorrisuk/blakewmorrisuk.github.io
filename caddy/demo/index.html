@@ -162,6 +162,10 @@
   --z-menubar:3600;
   --z-scrim:  3700;
   --z-modal:  3800;
+  /* The arrival. Over every window and every piece of chrome, and
+     deliberately UNDER the green, so the green can fade out on top of
+     the overlay's own black and the two hand off with no seam. */
+  --z-welcome:3900;
   --z-green:  5000;
   --z-live:   9000;
 
@@ -627,10 +631,15 @@
      and lifts a hair, then settles. The breathe loop is handed off to a
      transform so the two never fight over the same property. */
   .g-cup { pointer-events: auto; }
-  .g-cup:hover .g-flag {
-    animation-play-state: paused;
-    transform: rotate(-2.5deg) translateY(-2px);
-    transition: transform var(--t-2) var(--ease);
+  /* Only where a pointer can actually leave. On touch there is no
+     un-hover, so a tap on the cup froze the flag mid-tilt and left it
+     there for the rest of the visit. */
+  @media (hover: hover) {
+    .g-cup:hover .g-flag {
+      animation-play-state: paused;
+      transform: rotate(-2.5deg) translateY(-2px);
+      transition: transform var(--t-2) var(--ease);
+    }
   }
   @keyframes shiver {
     0% { transform: rotate(0deg); }
@@ -675,19 +684,18 @@
     transition: transform 300ms var(--ease-soft), opacity 260ms linear 60ms;
   }
 
-  /* The black of the cup takes the screen. */
-  .green.wipe::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at var(--wx) var(--wy), #000 0, #000 100%);
-    clip-path: circle(0 at var(--wx) var(--wy));
-    animation: cupwipe 700ms var(--ease) forwards;
+  /* The green gives the screen up. The welcome overlay's black is
+     already underneath at this point, so this is a straight dip: the
+     field goes, the black is revealed, and nothing travels.
+
+     Accelerate and never settle. A departure that eases out reads as
+     arriving somewhere, and this one is leaving. The whole scene stops
+     taking input the moment it starts, because a putter that still
+     answers a drag over black is a ghost. */
+  .green.wipe {
+    animation: fadeout 420ms var(--ease-exit) forwards;
+    pointer-events: none;
   }
-  @keyframes cupwipe {
-    to { clip-path: circle(150% at var(--wx) var(--wy)); }
-  }
-  .green.wipe { animation: fadeout 200ms linear 620ms forwards; }
   @keyframes fadeout { to { opacity: 0; } }
 
   @media (prefers-reduced-motion: reduce) {
@@ -844,8 +852,16 @@
 
   /* touch-action goes on the play surface and nowhere wider. On the
      document it would kill pinch zoom and take 1.4.4 with it. */
-  .green.aiming { touch-action: none; -webkit-tap-highlight-color: transparent; }
-  .green.aiming, .green.aiming * { -webkit-touch-callout: none; }
+  /* The gesture is claimed from the moment the field is staged, not
+     from the moment the putt arms 820ms later. In that gap iOS was
+     still free to read the first pull as a page pan and swallow it,
+     which is a bad first impression to make on the one gesture the
+     whole scene asks for. `playing` is the earlier of the two classes
+     and carries nothing else; `aiming` cannot take this job because it
+     also switches the ball's transition off, and adding it early makes
+     the ball teleport to the tee instead of rolling there. */
+  .green.playing, .green.aiming { touch-action: none; -webkit-tap-highlight-color: transparent; }
+  .green.playing *, .green.aiming * { -webkit-touch-callout: none; }
 
   .p-guide {
     position: absolute;
@@ -925,6 +941,27 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  /* The way past the putt, mirroring the sound switch across the top.
+     It sits up here rather than near the hint because the bottom of the
+     screen is where the pull happens, and a button in the pull zone
+     eats the gesture it is meant to rescue. */
+  .green .p-skip {
+    position: absolute;
+    left: calc(clamp(8px, 1.6vw, 30px) + env(safe-area-inset-left));
+    top: calc(clamp(8px, 1.8vh, 28px) + env(safe-area-inset-top));
+    min-height: 44px;
+    padding: 6px 14px;
+    font-size: 12px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: rgba(242, 245, 239, .46);
+    border-radius: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--t-3) var(--ease), color var(--t-2) var(--ease);
+  }
+  .green .p-skip.on { opacity: 1; pointer-events: auto; }
+
   /* The ball in play. Position and spin are written every frame by the
      loop; squash is the aiming affordance only. */
   .green.playing .g-ball.free {
@@ -966,40 +1003,10 @@
     transition: none;
   }
 
-  /* The fall. The iris closes on the hole at about seventy percent of
-     the scale's duration, because the aperture shutting ahead of the
-     zoom is the whole difference between falling down a shaft and
-     zooming at a wall. The scale is cut off mid-acceleration and never
-     allowed to settle, for the same reason. */
-  /* The fall is driven frame by frame in 70-green.js, not by keyframes.
-     A CSS timing function applies to each keyframe segment separately,
-     so an intermediate stop restarts the curve from zero velocity and
-     the move visibly stalls in the middle. One loop, one continuous
-     function, and the aperture on the same clock as the scale. */
-  .green.falling { will-change: transform; }
-
-  /* The iris is a SIBLING of the scene, not a child of it. As a child
-     it would ride the fall's own scale and open as fast as the zoom
-     closed. It is a circle of nothing with black shadowed out to every
-     edge, so shrinking it shuts the world down to a point on the hole. */
-  .g-iris {
-    position: fixed;
-    width: 240px; height: 240px;
-    margin: -120px 0 0 -120px;
-    border-radius: 50%;
-    box-shadow: 0 0 0 9999px #000;
-    pointer-events: none;
-    z-index: var(--z-live);
-    transform: scale(22);
-  }
-
-  /* The last of the light goes out under the black, so the desk is
-     never revealed by the green simply vanishing. */
-  .green.falling .g-lock, .green.falling .g-mown, .green.falling .g-note,
-  .green.falling .p-hint, .green.falling .p-putter {
-    opacity: 0;
-    transition: opacity 200ms linear;
-  }
+  /* The camera fall lived here. It is gone, along with its iris. What
+     leaves the green now is a plain fade to black, and the black itself
+     belongs to the welcome overlay in 35-welcome.css, which is already
+     underneath by the time this starts. See .green.wipe above. */
 
   .green .p-sound {
     position: absolute;
@@ -1076,6 +1083,446 @@
     .g-note-t { font-size: 11px; }
     .g-note-row { gap: 10px; }
     .g-note-mark .no-ai { width: 22px; height: 22px; }
+  }
+}
+
+
+/* ================================================================
+   src/css/35-welcome.css
+   ================================================================ */
+/* =====================================================================
+   35-welcome.css   the arrival: the black, the fog, and two cards.
+
+   In @layer state, with the rest of the transient furniture, so it
+   settles over the scene layers without spending specificity to do it.
+
+   The type here is the poster's type at the poster's scale, and the
+   two exits are the poster's own opposed arcs, because this is the
+   second half of one film and not a separate screen that happens to
+   follow it.
+   ===================================================================== */
+
+@layer state {
+
+  /* ---- the shell ---------------------------------------------------- */
+
+  .wc {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;          /* the exits travel 142vw. Contain them. */
+    display: grid;
+    place-items: center;
+    z-index: var(--z-welcome);
+    pointer-events: none;      /* only the skip button takes a pointer  */
+    padding: 0 clamp(20px, 6vw, 90px);
+  }
+
+  /* ---- two veils, never one ------------------------------------------
+     Element opacity multiplies whatever the backdrop filter produced,
+     so a single fading black would drag the blur down with it and the
+     two could never sit on separate curves. One plate of pure black,
+     one plate of blur, crossfading past each other.
+     -------------------------------------------------------------------- */
+
+  .wc-ink, .wc-veil {
+    position: absolute;
+    inset: 0;
+    transition: opacity 520ms var(--ease);
+  }
+  .wc-ink { background: #000; opacity: 0; }
+  .wc-veil {
+    background: rgba(9, 17, 13, .55);
+    backdrop-filter: blur(17px) saturate(.92);
+    -webkit-backdrop-filter: blur(17px) saturate(.92);
+    opacity: 0;
+  }
+
+  .wc.wc-black .wc-ink  { opacity: 1; transition: none; }
+  .wc.wc-fog   .wc-ink  { opacity: 0; }
+  .wc.wc-fog   .wc-veil { opacity: 1; }
+  .wc.wc-clear .wc-veil { opacity: 0; transition-duration: 600ms; }
+  .wc.wc-clear .wc-ink  { opacity: 0; }
+
+  /* A browser with no backdrop filter gets a heavier flat wash. Without
+     this the type sits on a document at 55 percent and is unreadable,
+     which is the one thing the fog exists to prevent. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .wc-veil { background: rgba(9, 17, 13, .84); }
+  }
+
+  /* A full viewport backdrop filter is the most expensive thing this
+     page could ask of a phone, and the phone is the device that
+     matters here. Halve the radius on a touch surface: the type is
+     larger there relative to what is behind it, so it costs nothing
+     legible and it buys the frame rate the bloom needs. */
+  @media (pointer: coarse) {
+    .wc-veil {
+      backdrop-filter: blur(9px) saturate(.94);
+      -webkit-backdrop-filter: blur(9px) saturate(.94);
+      background: rgba(9, 17, 13, .62);
+    }
+  }
+
+  /* ---- the card ------------------------------------------------------ */
+
+  .wc-card {
+    position: relative;
+    display: grid;
+    text-align: center;
+    justify-items: center;
+    max-width: min(880px, 90vw);
+  }
+
+  /* Both beats occupy the same cell, so beat two arrives without
+     reflowing beat one out from under itself on the way past. */
+  .wc-beat {
+    grid-area: 1 / 1;
+    display: grid;
+    justify-items: center;
+    opacity: 0;
+  }
+
+  /* The `rise` keyframe carries only a `from` block, so its implicit
+     `to` resolves against computed style. Lift the opacity on the BEAT
+     and animate the children, or every child animates from 0 to 0 and
+     nothing ever appears. This cost an afternoon somewhere. */
+  .wc.wc-b1 .wc-b1, .wc.wc-b1-out .wc-b1 { opacity: 1; }
+  .wc.wc-b2 .wc-b2, .wc.wc-b2-out .wc-b2 { opacity: 1; }
+  .wc.wc-b1-out.wc-b2 .wc-b1 { opacity: 1; }
+
+  /* ---- beat one: the mark, the line, the full stop -------------------- */
+
+  .wc-mark {
+    display: block;
+    margin-bottom: clamp(14px, 2.2vh, 26px);
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .45));
+  }
+  .wc-mark svg { display: block; }
+
+  .wc-head {
+    margin: 0;
+    font-family: var(--display);
+    font-size: clamp(33px, 6.6vw, 74px);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -.032em;
+    color: #f2f5ef;
+    text-wrap: balance;
+  }
+
+  /* The full stop is a golf ball and always was. The poster made that
+     joke once with "Get a caddy." This is the second telling, which is
+     the one where the visitor is already in on it. */
+  .wc-dot {
+    display: inline-block;
+    width: .245em; height: .245em;
+    margin-left: .045em;
+    vertical-align: baseline;
+  }
+  .wc-dot svg { display: block; width: 100%; height: 100%; }
+
+  /* ---- beat two: the promise, and the two doors ----------------------- */
+
+  /* The measure is set in pixels rather than in ch. A `ch` in a serif
+     face is the width of a zero, which is far wider than the average
+     lowercase letter, so 20ch measured out to about eleven words a line
+     and left "or" orphaned and "accessing" stranded. This is three
+     comfortable lines at every size the clamp reaches.
+
+     Leading has to clear the chips too: they are 1.15em tall inside a
+     1.45 line, and if those two numbers meet the line box grows and the
+     paragraph rags unevenly down the block. */
+  .wc-line {
+    margin: 0;
+    max-width: min(830px, 88vw);
+    font-family: var(--display);
+    font-size: clamp(19px, 2.7vw, 34px);
+    font-weight: 500;
+    line-height: 1.45;
+    letter-spacing: -.012em;
+    color: rgba(242, 245, 239, .93);
+    text-wrap: pretty;
+  }
+
+  /* The chip and its noun never break apart, because a door glyph
+     stranded at the end of a line is furniture rather than a label. */
+  .wc-key {
+    display: inline-flex;
+    align-items: center;
+    gap: .30em;
+    white-space: nowrap;
+  }
+  .wc-key b { font-weight: 800; color: #ffffff; }
+
+  /* A slice of the pane's own cream, at the pane's own radius. Two
+     small pieces of the actual product, sitting inside the sentence
+     that names them. */
+  .wc-chip {
+    display: inline-grid;
+    place-items: center;
+    width: 1.15em; height: 1.15em;
+    border-radius: var(--r-door);
+    background: var(--panel);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .34);
+  }
+  .wc-chip svg { display: block; width: 84%; height: 84%; }
+
+  /* ---- the motion ------------------------------------------------------
+     `rise`, `g-exit-l` and `g-exit-r` all live in 30-green.css and are
+     spent here unchanged. That is the point: the arrival is the poster
+     finishing its sentence, so it moves in the poster's handwriting.
+     ---------------------------------------------------------------------- */
+
+  .wc.wc-b1 .wc-mark { animation: rise 560ms var(--ease) both; }
+  .wc.wc-b1 .wc-head { animation: rise 640ms var(--ease) 110ms both; }
+  .wc.wc-b1 .wc-dot  { animation: wc-roll 720ms var(--roll) 340ms both; }
+
+  .wc.wc-b1-out .wc-mark { animation: g-exit-l 460ms both; }
+  .wc.wc-b1-out .wc-head { animation: g-exit-r 460ms 70ms both; }
+
+  .wc.wc-b2 .wc-line { animation: rise 660ms var(--ease) both; }
+  .wc.wc-b2 .wc-chip { animation: wc-pop 420ms var(--ease) both; }
+  .wc.wc-b2 .wc-key:nth-of-type(1) .wc-chip { animation-delay: 300ms; }
+  .wc.wc-b2 .wc-key:nth-of-type(2) .wc-chip { animation-delay: 430ms; }
+
+  .wc.wc-b2-out .wc-line { animation: g-exit-l 460ms both; }
+
+  /* It rolls in from the right and parks as the period, on the same
+     constant-deceleration curve every other ball on this page uses. */
+  @keyframes wc-roll {
+    from {
+      opacity: 0;
+      transform: translateX(2.6em) rotate(-620deg) scale(.8);
+    }
+    12% { opacity: 1; }
+  }
+
+  @keyframes wc-pop {
+    from { opacity: 0; transform: scale(.62) translateY(4px); }
+  }
+
+  /* ---- the way out ------------------------------------------------------
+     Lifted from .p-skip, deliberately: it is the same offer in the same
+     voice at the same weight, so a visitor who learned it on the green
+     already knows it here. Top left, out of the thumb's way, and the
+     only thing in this overlay that takes a pointer.
+     ---------------------------------------------------------------------- */
+
+  .wc-skip {
+    position: absolute;
+    left: calc(clamp(14px, 2.4vw, 40px) + env(safe-area-inset-left));
+    top: calc(clamp(14px, 2.4vh, 34px) + env(safe-area-inset-top));
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    background: none;
+    color: rgba(242, 245, 239, .46);
+    font: 600 12px/1 var(--sans);
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    cursor: pointer;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 420ms var(--ease), color var(--t-2) var(--ease);
+  }
+  .wc.wc-fog .wc-skip { opacity: 1; }
+  .wc.wc-clear .wc-skip { opacity: 0; pointer-events: none; }
+  .wc-skip:hover { color: rgba(242, 245, 239, .82); }
+  .wc-skip:focus-visible {
+    outline: 2px solid var(--flag-on-dark);
+    outline-offset: 3px;
+    border-radius: var(--r);
+    color: rgba(242, 245, 239, .82);
+  }
+
+  /* ======================================================================
+     THE TOUR. The hole in the glass, the caption beside it, the
+     hairlines between two halves of one fact, and the dots that say how
+     much of this is left.
+     ====================================================================== */
+
+  /* The polygon squares the corners off by definition, so the ring is
+     what the eye actually reads as "here". It also covers the four
+     corner slivers where unblurred content shows past the radius. */
+  .tr-rings { position: absolute; inset: 0; pointer-events: none; }
+  .tr-rings i {
+    position: absolute;
+    border: 1.5px solid var(--flag-on-dark);
+    border-radius: var(--r);
+    box-shadow: 0 0 0 3px rgba(255, 122, 82, .16), 0 8px 30px rgba(0, 0, 0, .40);
+    pointer-events: none;
+    opacity: 0;
+    transition: left 420ms var(--ease), top 420ms var(--ease),
+                width 420ms var(--ease), height 420ms var(--ease),
+                opacity 260ms var(--ease);
+  }
+  .wc.wc-fog .tr-rings i { opacity: 1; }
+  .wc.wc-fog .tr-rings i[hidden] { opacity: 0; }
+  .wc.wc-clear .tr-rings i { opacity: 0; }
+  .wc.wc-fog .wc-veil {
+    transition: opacity 520ms var(--ease), clip-path 420ms var(--ease);
+  }
+
+  /* ---- the caption ------------------------------------------------------
+     Caddy's own furniture: the cream panel, the green ink, one red
+     accent where the point is. The same card the pane's callout uses,
+     because this is the same voice saying the same kind of thing.
+     ------------------------------------------------------------------------ */
+
+  .tr-cap {
+    position: absolute;
+    width: min(320px, 78vw);
+    padding: 13px 15px 14px;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--r);
+    box-shadow: var(--lift-2);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 340ms var(--ease), transform 420ms var(--ease),
+                left 420ms var(--ease), top 420ms var(--ease);
+  }
+  .tr-cap.on { opacity: 1; transform: none; }
+
+  .tr-cap-head { display: flex; align-items: flex-start; gap: 10px; }
+  .tr-lead {
+    flex: 1;
+    display: block;
+    font: 700 11px/1.3 var(--sans);
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .tr-cap-mark { flex: none; display: block; margin-top: -2px; opacity: .8; }
+  .tr-cap-mark svg { display: block; }
+
+  .tr-cap p {
+    margin: 0;
+    font: 13px/1.5 var(--sans);
+    color: var(--ink);
+  }
+  .tr-note {
+    margin-top: 8px !important;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+    font-size: 12px !important;
+    color: var(--muted) !important;
+  }
+
+  /* The path, drawn as a path. */
+  .tr-path {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 3px 5px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    font: 600 11.5px/1.35 var(--sans);
+    color: var(--green);
+  }
+  .tr-sep { color: var(--muted); font-style: normal; }
+
+  /* ---- the hairlines -----------------------------------------------------
+     Drawn rather than faded in. A line that draws itself says "this came
+     from there". A line that appears says "here is a line".
+     ------------------------------------------------------------------------ */
+
+  .tr-wires {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .tr-wire path {
+    stroke: var(--flag-on-dark);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .5));
+    animation: tr-draw 720ms var(--ease) both;
+  }
+  @keyframes tr-draw { to { stroke-dashoffset: 0; } }
+
+  .tr-wire circle {
+    fill: var(--flag-on-dark);
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .5));
+  }
+  /* The tail fades up with the stroke. The head lands after it, which is
+     what turns a drawn line into an arrival. Opacity only: animating an
+     SVG geometry property is supported unevenly and this has to work on
+     whatever a law office has installed. */
+  .tr-wire-a { opacity: 0; animation: tr-fade 240ms linear both; }
+  .tr-wire-b { opacity: 0; animation: tr-fade 300ms var(--ease) both; }
+  @keyframes tr-fade { to { opacity: 1; } }
+
+  /* ---- how much is left ---------------------------------------------------
+     The single most useful thing you can tell somebody watching a tour.
+     Bottom centre, small, out of the way of everything.
+     -------------------------------------------------------------------------- */
+
+  .tr-dots {
+    position: absolute;
+    left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display: flex;
+    gap: 7px;
+    pointer-events: none;
+  }
+  .tr-dots i {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(242, 245, 239, .26);
+    transition: background var(--t-3) var(--ease), transform var(--t-3) var(--ease);
+  }
+  /* A layer for the paper to fall in front of.
+
+     .cf-burst carries no z-index of its own, which was right on the
+     green, where nothing was above it. In the workspace every window
+     the manager owns sits at 1000 and up, so a burst thrown straight
+     into #stage lands BEHIND Word and is never seen. The pieces were
+     all there, all 34 of them, in flight, under the paper. */
+  .tr-cheer {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-live);
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .tr-dots i.on { background: rgba(242, 245, 239, .74); }
+  .tr-dots i.at { background: var(--flag-on-dark); transform: scale(1.35); }
+  .wc.wc-clear .tr-dots { opacity: 0; transition: opacity 300ms linear; }
+
+  /* ---- calm --------------------------------------------------------------
+     80-motion.css already collapses every animation and transition in
+     the file to .001ms, so the arcs and the roll are gone without
+     anything being said here. What is NOT collapsed is the dwell,
+     because 74-welcome.js schedules on raw timers on purpose. A visitor
+     who asked for calm still gets the full reading time, with hard cuts
+     where the movement was. The one thing worth stating is the blur:
+     a static heavy blur is not motion, and dropping it would leave the
+     type sitting unreadable on a live document.
+     ------------------------------------------------------------------------ */
+
+  @media (prefers-reduced-motion: reduce) {
+    .wc-beat { transition: none; }
+  }
+
+  /* ---- small rooms ------------------------------------------------------- */
+
+  @media (max-width: 560px), (max-height: 460px) {
+    .wc-mark { margin-bottom: 10px; }
+    .wc-mark svg { width: 48px; height: 60px; }
+    .wc-line { max-width: 92vw; font-size: clamp(17px, 4.6vw, 24px); }
+    .wc-skip { font-size: 11px; }
   }
 }
 
@@ -1221,7 +1668,11 @@
     pointer-events: none;
     transition: opacity var(--t-1) var(--ease-soft);
   }
-  .dock-app:hover::after { opacity: 1; }
+  /* A tooltip that only a mouse can dismiss. On touch it latched on
+     after a tap and stayed lit over the neighbouring icon. */
+  @media (hover: hover) {
+    .dock-app:hover::after { opacity: 1; }
+  }
 
   @keyframes bounce {
     0%, 100% { transform: scale(var(--mag, 1)) translateY(0); }
@@ -1274,7 +1725,12 @@
   /* ---- Finder ------------------------------------------------------------- */
 
   .win-finder .win-body { flex-direction: row; background: #fff; }
-  .fnd { display: flex; flex: 1; min-height: 0; }
+  /* min-width: 0 the whole way down, the same discipline the pane
+     keeps. Without it a flex item's floor is its min-content width, and
+     this one's floor is the sidebar plus the longest file name, so on a
+     phone the Finder stood 46px wider than the window it lives in and
+     the names ran off the right edge. */
+  .fnd { display: flex; flex: 1; min-width: 0; min-height: 0; }
   .fnd-side {
     flex: none;
     width: 168px;
@@ -1310,6 +1766,13 @@
   .fnd-row .g { color: #6b90c9; flex: none; }
   .fnd-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fnd-meta { flex: none; font-size: 11px; color: var(--w-dim); }
+  /* The crumb bar sets the whole window's floor. Every segment is nowrap,
+     so the bar's min-content is the sum of them, and a column flex
+     container takes its width floor from the widest child: at 360px the
+     Finder stood 385 wide inside a 360 window and the body scrolled
+     sideways under a thumb. min-width: 0 plus the ellipsis is the floor
+     that stops that at any width, and the last segment is the one worth
+     keeping whole, because it is the folder you are looking at. */
   .fnd-path {
     flex: none;
     display: flex; align-items: center; gap: 4px;
@@ -1319,8 +1782,16 @@
     border-top: 1px solid var(--w-line);
     font-size: 11px;
     color: var(--w-dim);
+    min-width: 0;
+    overflow: hidden;
   }
-  .fnd-seg { white-space: nowrap; }
+  .fnd-seg {
+    white-space: nowrap;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .fnd-seg:last-child { flex: none; }
   .fnd-path .g { flex: none; }
 
   /* ---- the caddy's read --------------------------------------------------- */
@@ -1451,12 +1922,92 @@
   }
   .about .close:hover { background: var(--green-soft); }
 
-  /* ---- narrow: the desk gets out of the way ---------------------------------- */
+  /* ---- narrow: the desk gets out of the way ----------------------------------
 
-  @media (max-width: 820px) {
-    .dock, .menubar { display: none; }
-    #desk-windows { top: 0; }
-    .guide { bottom: 18px; left: 12px; right: 12px; max-width: none; }
+     It used to get out of the way by deleting itself. `.dock, .menubar
+     { display: none }` took the only navigation on the page with it, so
+     a phone visitor who reached the desk had no way to open anything.
+     The menu bar can go, since every command in it is also in the
+     ribbon, but the Dock is the navigation and it stays. It stops being
+     a floating island and becomes a bar across the bottom, which is
+     where a phone expects to find one. */
+
+  /* Width alone is the wrong gate, and the block below this one proves it:
+     it was written for "a phone in landscape is 390 tall" and then hidden
+     behind max-width, which a landscape phone at 852 never satisfies. So
+     it never fired once, and a rotated phone got the full desktop chrome
+     over a 393px screen: menu bar, floating Dock across the document, and
+     no room left to read. Short and touched is the second way to be a
+     phone. Measured: 852x393 matches this leg and not the width one,
+     393x852 matches the width leg and not this one, and a 1440x900
+     desktop matches neither, which is the point. */
+  @media (max-width: 820px), (max-height: 460px) and (pointer: coarse) {
+    .menubar { display: none; }
+
+    /* 168px of Favorites out of 393px of screen leaves the file names
+       nothing. The rail keeps its rows, it just stops taking nearly
+       half the window to show them. */
+    .fnd-side { width: 124px; }
+    .fnd-shead { padding: 8px 8px 4px; }
+    .fnd-srow { padding: 5px 8px; gap: 6px; }
+    .fnd-srow.on { margin: 0 4px; }
+
+    .dock {
+      left: 0; right: 0; bottom: 0;
+      transform: none;
+      height: auto;
+      justify-content: space-around;
+      gap: 2px;
+      padding: 5px 4px calc(5px + env(safe-area-inset-bottom));
+      border-radius: 0;
+      border-left: 0; border-right: 0; border-bottom: 0;
+      background: rgba(22, 34, 28, .82);
+    }
+    /* No magnification on a finger: --mag is written by pointermove,
+       which on touch fires once and leaves the last icon swollen. */
+    .dock-app {
+      width: 44px; height: 44px;
+      transform: none;
+    }
+    .dock-app svg { width: 44px; height: 44px; }
+    .dock-app.trash { margin-left: 0; }
+    .dock-min { margin-left: 4px; padding-left: 4px; }
+    .dock-min-app { width: 32px; height: 32px; }
+
+    /* The windows end where the bar begins, or the bar covers them. */
+    #desk-windows { top: 0; bottom: calc(54px + env(safe-area-inset-bottom)); }
+
+    /* Clear of the Dock and clear of Word's status bar, which sits at
+       the foot of the window the guide is floating over. */
+    .guide {
+      bottom: calc(84px + env(safe-area-inset-bottom));
+      left: 12px; right: 12px;
+      max-width: none;
+    }
+  }
+
+  /* A phone in landscape is 390 tall. The bar has to shed height there
+     or it eats a seventh of the desk. Height and touch only: the width
+     leg is what kept this from ever running. */
+  @media (max-height: 460px) and (pointer: coarse) {
+    .dock-app, .dock-app svg { width: 34px; height: 34px; }
+    #desk-windows { bottom: calc(44px + env(safe-area-inset-bottom)); }
+    /* Edge to edge is right on a 393px screen and wrong on an 852px one:
+       the same rule drew an 828px coach mark across the whole desk. Cap it
+       and it reads as a note again. */
+    .guide { bottom: calc(54px + env(safe-area-inset-bottom)); max-width: 420px; }
+  }
+
+  /* Below 393 the ellipsis floor above stops the spill but reads as a row
+     of stumps, so drop the leading crumbs instead and keep the two that
+     say where you are. 392 is measured, not chosen: the crumb bar wants
+     261px, the rail takes 124, and 393 clears it by eight pixels, which
+     is why the phone verify.mjs covers passes and a 360 does not. The
+     leading mark is honest because the shortest path in the pack is three
+     segments, so something is always being stood in for. */
+  @media (max-width: 392px) {
+    .fnd-path > *:not(:nth-last-child(-n + 3)) { display: none; }
+    .fnd-path::before { content: "\2026"; color: var(--w-dim); }
   }
 }
 
@@ -1882,6 +2433,77 @@
   @container word (max-width: 760px) {
     .wd-chips .wchip span { display: none; }
   }
+
+  /* ---- phone: give the page back its height ----------------------------
+
+     The steps above only ever thinned the ribbon. At 393px the ribbon,
+     the tab strip, the ruler and the status bar together still took
+     about 160px of an 852px screen before a word of the document
+     showed, and the two rails took 442px of width out of 393. */
+
+  @container word (max-width: 560px) {
+    /* The rails overlay rather than disappear. Hiding them would leave
+       Navigation Pane and the comment controls looking live and doing
+       nothing, which is the one thing no control in this build is
+       allowed to do. Together they are 442px of column, in 393px of
+       window, so a column is what they cannot have. */
+    .wd-work { position: relative; }
+    .nav-rail, .cmt-rail {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: min(280px, 78%);
+      z-index: var(--z-overlay);
+      box-shadow: var(--lift-2);
+    }
+    .nav-rail { left: 0; }
+    .cmt-rail { right: 0; }
+
+    /* The ruler measures a page that no longer fits the window. */
+    .wd-ruler { display: none; }
+
+    /* The ribbon and the tab strip both clip at this width, which
+       quietly puts everything past the first group or two out of reach.
+       Let them scroll sideways instead, so nothing is hidden and nothing
+       is fake. Scrolling also drops their min-content contribution, which
+       is what was forcing the whole window body to 691px inside a 393px
+       phone. */
+    .wd-ribbon {
+      height: 58px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+    }
+    .wd-tabs {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+    }
+    .wd-ribbon::-webkit-scrollbar,
+    .wd-tabs::-webkit-scrollbar { height: 0; }
+
+    /* The title bar sheds words, never controls. AutoSave keeps its
+       pill, Search keeps its magnifier, and both stay live; it is only
+       the labels that will not fit on a phone. */
+    .as-label { display: none; }
+    .wd-search span { display: none; }
+    .wd-compat { display: none; }
+    .win-word .win-title { gap: 6px; padding: 0 6px; }
+  }
+
+  @container word (max-width: 480px) {
+    /* The status bar keeps the zoom, which is the control that matters
+       most on a phone, and sheds the readouts and the layout switches it
+       has no room for. */
+    #sb-page, #sb-words, .wd-status .sb-ic,
+    .wd-status [data-ctl-id="sb.focus"],
+    .wd-status [data-ctl-id="sb.print"],
+    .wd-status [data-ctl-id="sb.web"],
+    .wd-status [data-ctl-id="sb.reading"] { display: none; }
+
+    /* 16px or iOS magnifies the whole page on focus and, with a fixed
+       stage and no page scroll, never gives it back. */
+    .find-in { width: 128px; font-size: 16px; }
+  }
 }
 
 
@@ -1903,6 +2525,13 @@
    ===================================================================== */
 
 @layer doc {
+  /* Centred with auto margins rather than justify-content, which looks
+     like the same thing and is not. A centred flex item that outgrows
+     its container puts half the overflow at a NEGATIVE scroll offset,
+     and scrollLeft floors at zero, so that half can never be reached.
+     On a phone that silently amputated the left 186px of every page.
+     Auto margins collapse to zero once the item no longer fits, so the
+     overflow lands where scrolling can get to it. */
   #doc-canvas {
     flex: 1;
     min-width: 0;
@@ -1910,11 +2539,11 @@
     background: var(--w-canvas);
     padding: 16px 0 60px;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-start;
   }
 
-  #doc-scale { position: relative; flex: none; }
+  #doc-scale { position: relative; flex: none; margin-inline: auto; }
 
   #doc-pages {
     width: var(--sheet-w);
@@ -1925,7 +2554,15 @@
   }
   #doc-pages ::selection { background: var(--w-sel); }
 
+  /* flow-root, or the page body's top margin collapses straight out
+     through the paper and gets drawn as canvas above it. The geometry
+     at the top of this file says the text block sits one inch down from
+     the top edge; without containment it sat at zero, every filing
+     started flush against the paper's edge, and the inch showed up as
+     grey. 78 + 698 + 78 is 854, which is the sheet, so contained is
+     also the only way the numbers add up. */
   .sheet {
+    display: flow-root;
     width: var(--sheet-w);
     height: var(--sheet-h, 854px);
     margin: 0 auto 16px;
@@ -2907,6 +3544,57 @@
     .v-meta { display: none; }
     .v-bar { gap: 6px; padding: 8px; }
     .v-bar button { padding: 4px 6px; }
+  }
+
+  /* ---- phone: the pane takes the window ---------------------------------
+
+     At 393px the overlay above covers 92% of the document anyway, which
+     reads as a sheet that failed to open rather than a pane. So let it
+     be a sheet, and make the close Word draws on the host band big
+     enough to hit with a thumb. */
+
+  @container word (max-width: 480px) {
+    .pane-col { width: 100%; }
+    .pane-host { height: 34px; padding-right: 2px; }
+    .pane-host-x {
+      width: 34px; height: 34px;
+      display: grid; place-items: center;
+    }
+
+    /* iOS magnifies the page on focus of any field under 16px and, with
+       a fixed stage and no page scroll, there is no reflow to zoom back
+       out against, so it stays magnified for the rest of the visit. The
+       cure is the field, never maximum-scale, which would take pinch
+       zoom and WCAG 1.4.4 with it. */
+    .pane input[type="search"],
+    .pane input[type="text"],
+    .pane select,
+    .pane textarea { font-size: 16px; }
+  }
+
+  /* ---- touch, at any window width --------------------------------------
+
+     The two rules above are layout and belong to the container: how wide
+     the pane sits is the Word window's business. How big a target has to
+     be, and whether a field triggers the iOS magnifier, are the pointer's
+     business, and the container query gets them wrong the moment a phone
+     turns sideways. At 852x393 the window is 852, the container leg does
+     not fire, and a thumb was handed an 18px close and 11px fields, which
+     is the magnified pane that never zooms back out. Same cures, keyed to
+     the hand instead of the frame. The host band grows with the button:
+     34px inside a 26px band is a control `contain: paint` clips, and a
+     rect measured in script still reads a full 34. */
+
+  @media (pointer: coarse) {
+    .pane-host { height: 34px; padding-right: 2px; }
+    .pane-host-x {
+      width: 34px; height: 34px;
+      display: grid; place-items: center;
+    }
+    .pane input[type="search"],
+    .pane input[type="text"],
+    .pane select,
+    .pane textarea { font-size: 16px; }
   }
 }
 
@@ -8402,12 +9090,21 @@
     var sig = { signal: ac.signal };
     var box = deskBox();
 
+    /* The asked-for size is a wish, and the desk is the fact. Finder
+       asks for 620 wide, which is right on a laptop and 227px wider than
+       the phone this link actually gets opened on, so it hung off the
+       right edge with its own contents trailing after it. Clamp the size
+       first, then centre what is left, or the centring is computed from
+       a width the window never gets. */
+    var w0 = Math.min(opts.w || 640, box.w);
+    var h0 = Math.min(opts.h || 480, box.h);
+
     var st = {
       id: opts.id,
-      x: opts.x == null ? Math.round((box.w - (opts.w || 640)) / 2) : opts.x,
+      x: opts.x == null ? Math.round((box.w - w0) / 2) : Math.min(opts.x, Math.max(0, box.w - w0)),
       y: opts.y == null ? 60 : opts.y,
-      w: opts.w || 640,
-      h: opts.h || 480,
+      w: w0,
+      h: h0,
       /* A floor taller or wider than the desk is not a floor, it is an
          overflow. Word asks for 780 by 520, which is right on a laptop
          and half a screen too wide on the phone this link is going to
@@ -10530,6 +11227,16 @@
     bar.appendChild(C.el("span.sb", { text: "English (United States)" }));
     bar.appendChild(C.el("span.sb", { text: "Accessibility: Good to go" }));
     bar.appendChild(C.el("span.sb-gap"));
+    /* The sound switch lives HERE and not in the menu bar, because the
+       menu bar is display:none on every phone and this page is opened
+       from a link in a bio. The status bar survives: it only drops
+       Focus, Print, Web and Reading under 480px. It is also the one
+       piece of chrome that is on screen from the moment Word opens
+       until the visitor closes the page, which is what a mute has to
+       be once music can outlive the scene it started in. */
+    bar.appendChild(C.el("button.sb.sb-btn#sb-sound", { type: "button",
+      "data-ctl-id": "sb.sound" },
+      [C.node(C.svg.speaker(13, !!(C.gsound && C.gsound.on)))]));
     bar.appendChild(C.el("button.sb.sb-btn", { type: "button", "data-ctl-id": "sb.focus" }, [
       C.node(C.svg.icon("focus", 13)), C.el("span", { text: "Focus" })
     ]));
@@ -10589,7 +11296,7 @@
       minW: 780, minH: 520,
       dockIconEl: function () { return C.$("dock-word"); },
       onClose: function () { win = null; C.store.set("desk.wordOpen", false); C.scene.toDesk(); },
-      onResize: function () { C.docview.sizeScale(); }
+      onResize: function () { C.docview.sizeScale(); fitToWidth(); }
     });
 
     C.add(win.body, [elTabs, elRibbon, elWork, elStatus]);
@@ -10599,13 +11306,18 @@
     C.reg.paint(win.el);
 
     /* Publish the starting zoom so the paper and the ruler agree from
-       the first frame, rather than from the first change. */
+       the first frame, rather than from the first change. Ours, not the
+       visitor's, so it must not count as taking the wheel. */
+    zoomAuto = true;
     C.store.emit("word.zoom", C.store.get("word.zoom"));
+    zoomAuto = false;
 
     var doc = pick(docKey);
     C.doc.load(doc);
     C.docview.rebuild();
     syncTitle();
+    /* After the paper exists, so there is a width to fit against. */
+    fitToWidth();
     C.store.set("desk.wordOpen", true);
     return win;
   };
@@ -10717,6 +11429,7 @@
     C.store.on("doc.title", syncTitle);
     C.store.on("doc.dirty", syncTitle);
     C.store.on("word.zoom", function (z) {
+      if (!zoomAuto) zoomHeld = true;
       document.documentElement.style.setProperty("--doc-zoom", z);
       var pct = Math.round(z * 100);
       var el = C.$("sb-pct"); if (el) el.textContent = pct + "%";
@@ -10794,6 +11507,39 @@
     var z = C.clamp((C.store.get("word.zoom") || 1) + d, 0.4, 4);
     C.store.set("word.zoom", Math.round(z * 100) / 100);
   }
+
+  /* ---- fit to width, on arrival only ---------------------------------
+     A Letter page at the reading zoom is 766px wide. In a phone-width
+     window that is roughly twice what fits, so the visitor lands staring
+     at the middle of a page with no way to tell what they are looking
+     at. Arriving fit-to-width shows the shape of the document, which is
+     the thing worth seeing first, and the zoom controls sit in the
+     status bar for reading. It only ever scales DOWN, so a desktop keeps
+     the reading zoom untouched, and the moment the visitor sets a zoom
+     of their own this stops firing for good. */
+
+  var zoomHeld = false;   /* the visitor has taken the wheel */
+  var zoomAuto = false;   /* the change below is ours, not theirs */
+
+  function fitZoom() {
+    var canvas = C.$("doc-canvas"), pages = C.$("doc-pages");
+    if (!canvas || !pages || !pages.offsetWidth) return 0;
+    var room = canvas.clientWidth - 24;
+    return room > 0 ? room / pages.offsetWidth : 0;
+  }
+
+  function fitToWidth() {
+    if (zoomHeld) return;
+    var f = fitZoom();
+    if (!f) return;
+    var z = C.store.get("word.zoom") || 1;
+    if (f >= z - 0.005) return;
+    zoomAuto = true;
+    C.store.set("word.zoom", Math.max(0.3, Math.round(f * 100) / 100));
+    zoomAuto = false;
+  }
+
+  W.fitToWidth = fitToWidth;
 
   function shortcuts(e) {
     var meta = e.metaKey || e.ctrlKey;
@@ -11674,6 +12420,23 @@
 
   /* ---- status bar --------------------------------------------------------------------- */
 
+  /* The one control in this chrome that belongs to the page rather than
+     to the simulation. It is live wherever the browser hands out an
+     AudioContext, and it dims itself where one is not available, which
+     is the same honesty every other control here is held to. */
+  def("sb.sound", {
+    label: "Sound",
+    enabled: function () { return !!(C.gsound && C.gsound.available); },
+    on: function () { return !!(C.gsound && C.gsound.on); },
+    run: function () {
+      if (!C.gsound) return;
+      var on = C.gsound.toggle();
+      var b = C.$("sb-sound");
+      if (b) { C.clear(b); b.appendChild(C.node(C.svg.speaker(13, on))); }
+      C.status(on ? "Sound on." : "Sound off.", "");
+    }
+  });
+
   def("sb.focus", { label: "Focus", on: isOn("focus"), run: flip("focus") });
   def("sb.print", { label: "Print Layout", run: function () { C.store.set("word.layout", "print"); } });
   def("sb.web", { label: "Web Layout", run: function () { C.store.set("word.layout", "web"); } });
@@ -12194,6 +12957,11 @@
       var onMove = function (ev) {
         var word = C.wm.get("word");
         var max = word ? Math.min(720, word.rect().w - 420) : 720;
+        /* In a phone-width window `w - 420` goes negative, and C.clamp
+           tests the floor first, so any width at or above the floor came
+           back as that negative number and the pane inverted. The ceiling
+           can never sit below the floor. */
+        if (max < 296) max = 296;
         setWidth(C.clamp(w0 + (sx - ev.clientX), 296, max));
       };
       var onUp = function () {
@@ -12587,7 +13355,10 @@
   }
 
   function driveHead() {
-    var back = C.el("button.link", { type: "button", text: "back to the case" });
+    /* .drive-back is a handle, not decoration: the tour has to be able
+       to find the way home the same way a visitor does, by the control
+       rather than by calling render() behind the UI's back. */
+    var back = C.el("button.link.drive-back", { type: "button", text: "back to the case" });
     back.addEventListener("click", function () {
       C.store.set("pane.drive", false);
       render();
@@ -15035,9 +15806,15 @@
    across the act break, and the campaign's own ball rolling in to land
    as the full stop.
 
-   Then the visitor knocks it in, and the black of the cup wipes to the
-   desk. The ball that punctuates the sentence is the ball that goes in
-   the hole. Nothing else moves.
+   Then the visitor knocks it in, and the whole field dips to black and
+   comes up inside Word. The ball that punctuates the sentence is the
+   ball that goes in the hole. Nothing else moves.
+
+   THE POSTER DOES NOT ADVANCE ON ITS OWN. It used to hold for four and
+   a half seconds and then clear itself, and any stray tap or key did
+   the same. A door that opens when you lean on the wall is not a door.
+   The button is the door, it is focused, and the poster will wait all
+   afternoon. Escape is the only key it answers.
    ===================================================================== */
 (function (C) {
   "use strict";
@@ -15049,21 +15826,14 @@
 
   /* poster -> clearing -> ready -> (the putt owns it from here) */
   var state = "poster";
-  var holdTimer = 0;
 
   /* Where the hole is drawn inside the 150x110 cup element. */
   var HOLE_X = 75, HOLE_Y = 88;
 
-  /* How long the poster holds before it gets out of its own way. */
-  var HOLD_MS = 4400;
-
-  /* The fall. Slower than it was, because at 900ms it was over before it
-     registered as a move at all. */
-  var FALL_MS = 1350;
-  var FALL_SCALE = 16;
-  var IRIS_AT = 0.84;       /* aperture shuts before the dive finishes */
-  var IRIS_FROM = 22;
-  var fallRaf = 0;
+  /* How long the green takes to give the screen up. The overlay picks
+     the black up from here, so this number and the overlay's own first
+     beat are one move and have to agree. */
+  var FADE_MS = 420;
 
   G.mount = function (stage) {
     /* on-dark switches the focus ring to flag red. Without it the ring
@@ -15097,11 +15867,23 @@
       C.el("sup.g-ref", { text: "1" })
     ]);
 
+    /* The label promises the game rather than the destination, because
+       the button is now the only way through and the visitor deserves
+       to know a putt is on the other side of it. */
     var enter = C.el("button.g-enter", { type: "button" }, [
-      C.el("span", { text: "Enter the workspace" }),
+      C.el("span", { text: "Take the shot" }),
       C.node(C.svg.icon("chev", 15))
     ]);
-    enter.addEventListener("click", function () { clear(); });
+    /* This click is the first user gesture the page ever gets, which is
+       the only moment an AudioContext can legally be built and started.
+       So the music starts here, with the putt, and the mute arrives
+       with the putter and then follows the visitor into Word. The page
+       is still silent on arrival: nothing sounds until somebody has
+       deliberately pressed something. */
+    enter.addEventListener("click", function () {
+      if (C.gsound) { C.gsound.enable(); C.gsound.bed(true); }
+      clear();
+    });
 
     var fine = C.el("p.g-fine", { text: "Fictional matter. No login. Nothing saved." });
 
@@ -15155,19 +15937,12 @@
     root.appendChild(mown);
     stage.appendChild(root);
 
-    /* Escape is the way out of the whole threshold, at any point. */
+    /* Escape is the way out of the whole threshold, at any point, and
+       it is the ONLY key the poster answers. Enter and Space still work
+       because .g-enter is a real button, it is focused below, and it
+       gets them natively. */
     root.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") { e.preventDefault(); G.skip(); return; }
-      if (state === "poster") clear();
-    });
-
-    /* The poster is worth about four and a half seconds, and not a
-       second more than the visitor wants to give it. Any touch, click
-       or key takes the hold off and starts the clear, so somebody who
-       came to play is playing inside two seconds and somebody who came
-       to read gets the whole poster. */
-    root.addEventListener("pointerdown", function () {
-      if (state === "poster") clear();
+      if (e.key === "Escape") { e.preventDefault(); G.skip(); }
     });
 
     if (C.env.calm) {
@@ -15179,7 +15954,7 @@
         setTimeout(function () { ball.classList.add("landed"); }, 620);
       });
     }
-    holdTimer = setTimeout(clear, C.ms(HOLD_MS));
+    /* No hold timer. The poster waits. */
     setTimeout(function () { enter.focus({ preventScroll: true }); }, C.ms(700));
     return root;
   };
@@ -15199,7 +15974,6 @@
   function clear() {
     if (state !== "poster") return;
     state = "clearing";
-    clearTimeout(holdTimer);
 
     liftBall();
 
@@ -15315,7 +16089,7 @@
 
     var hole = G.holeAt();
 
-    if (C.env.calm) { wipe(); return; }
+    if (C.env.calm) { land(); return; }
 
     /* Sit the ball exactly on the hole, then let it fall in. */
     var from = C.rect(ball);
@@ -15337,134 +16111,55 @@
       }
     }, 190);
 
-    /* Late enough that the paper has had most of its life. He asked for
-       the fall to come after the confetti or shortly before it, and at
-       900 it was cutting the burst in half. */
-    setTimeout(fall, 1250);
+    /* Late enough that the paper has had most of its life. The dip
+       comes after the confetti or shortly before it, and at 900 it was
+       cutting the burst in half. */
+    setTimeout(land, 1250);
   }
 
-  /* ---- the camera falls in -------------------------------------------
-     An iris says where you are going, a fade only says the scene is
-     over, and where this one is going happens to be a specific point on
-     screen. So the black closes on the hole rather than everywhere at
-     once.
+  /* ---- the dip -------------------------------------------------------
+     THIS REPLACED A CAMERA MOVE. The old exit dived down the hole at
+     sixteen times scale behind a closing iris. It was clever and it
+     looked bad, so it is gone rather than repaired, and what stands in
+     its place is the oldest transition in film for leaving a place.
 
-     What separates falling from zooming is the aperture. In a zoom the
-     frame stays open and the subject grows. Down a shaft the visible
-     world shrinks, so the iris has to finish well before the scale
-     does, and the scale has to be cut off while it is still speeding
-     up. A zoom that settles is not a fall.
+     Three beats, and the middle one is the reason to choose it. The
+     green fades to black. Nothing happens for a quarter of a second.
+     The black lifts on somewhere else. That quarter second of nothing
+     is doing real work: a whole Word window is built, four sheets are
+     paginated and the zoom is fitted underneath it, and none of that is
+     anything anyone should watch happen.
+
+     The overlay owns the black, not the green, because strip() takes
+     the green root away at the end of the fade and anything parented to
+     it would go with it. The green only fades itself out.
      -------------------------------------------------------------------- */
-  function fall() {
+  function land() {
     if (!root) return;
-    var to = G.holeAt();
 
-    if (C.env.calm) { wipe(); return; }
+    /* The overlay's black goes up FIRST and underneath, at --z-welcome
+       against the green's --z-green, so when the green fades there is
+       never a frame of bare desk between the two. */
+    if (C.welcome && C.welcome.open) C.welcome.open();
 
-    /* The iris is a sibling so it does not ride the fall's own scale. */
-    var iris = C.el("div.g-iris", { "aria-hidden": "true" });
-    iris.style.left = to.x + "px";
-    iris.style.top = to.y + "px";
-    root.parentNode.appendChild(iris);
-
-    root.style.transformOrigin = to.x + "px " + to.y + "px";
-    root.classList.add("falling");
-
-    var cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-    var tx = cx - to.x, ty = cy - to.y;
-    var logS = Math.log(FALL_SCALE);
-    var t0 = performance.now();
-    var handed = false;
-
-    function frame(now) {
-      if (!root) return;
-      var t = C.clamp((now - t0) / FALL_MS, 0, 1);
-
-      /* ONE continuous function for the whole move, which is the fix.
-         The old version had a keyframe at sixty percent, and a CSS
-         timing function applies to every segment separately, so the
-         curve restarted from zero velocity there and accelerated twice.
-         That mid-move stall is what read as two stages. */
-      var e = backIn(t);
-
-      /* Exponential in scale. Perceived zoom is logarithmic, so a scale
-         interpolated linearly speeds up and slows down to the eye even
-         when the numbers are even. Interpolating the LOG makes the rate
-         of apparent approach constant. */
-      var s = Math.exp(e * logS);
-
-      /* The translate leads the scale slightly, so the hole is centred
-         before the dive really commits. That is the natural variation
-         rather than a second stage: it never reverses and never stalls.
-         Saturating rather than clamped, because a clamp is a velocity
-         discontinuity of its own and putting one under the black is
-         still leaving one there. */
-      var lead = 1 - Math.pow(1 - Math.max(e, 0), 1.55);
-
-      /* Rotation goes one way only. The old one turned back at the seam,
-         which announced it. */
-      var rot = -2.6 * Math.pow(Math.max(e, 0), 1.4);
-
-      root.style.transform =
-        "translate3d(" + (tx * lead) + "px," + (ty * lead) + "px,0) " +
-        "scale(" + s.toFixed(4) + ") rotate(" + rot.toFixed(3) + "deg)";
-
-      /* Same clock as the scale. Two clocks with two curves is how the
-         aperture and the zoom ended at visibly different moments. The
-         iris still finishes first, because a shrinking aperture is the
-         whole difference between falling down a shaft and zooming at a
-         wall. */
-      var ir = C.clamp(t / IRIS_AT, 0, 1);
-      iris.style.transform = "scale(" + (IRIS_FROM * (1 - ease3(ir))).toFixed(4) + ")";
-
-      if (!handed && t >= IRIS_AT * 0.94) { handed = true; C.scene.toDesk(); }
-
-      if (t < 1) fallRaf = requestAnimationFrame(frame);
-      else {
-        if (!handed) C.scene.toDesk();
-        if (iris.parentNode) iris.parentNode.removeChild(iris);
-        strip();
-      }
-    }
-    fallRaf = requestAnimationFrame(frame);
-  }
-
-  /* Anticipation, the same craft the type exits use. The camera rears
-     back a couple of percent before it commits, which is what a body
-     does before it drops. One cubic, so velocity is continuous
-     everywhere and there is no seam to see. */
-  function backIn(t) {
-    var k = 0.5;
-    return t * t * ((k + 1) * t - k);
-  }
-
-  /* Smoothstep-ish accelerate for the aperture. */
-  function ease3(t) { return t * t * (3 - 2 * t) * t + (1 - t) * t * t; }
-
-  function wipe() {
-    if (!root) return;
-    var to = G.holeAt();
-    root.style.setProperty("--wx", to.x + "px");
-    root.style.setProperty("--wy", to.y + "px");
     root.classList.add("wipe");
-    C.scene.toDesk();
-    setTimeout(strip, C.ms(760) + 40);
+    setTimeout(strip, C.ms(FADE_MS) + 40);
   }
 
   function strip() {
-    if (fallRaf) { cancelAnimationFrame(fallRaf); fallRaf = 0; }
     if (C.putt && C.putt.teardown) C.putt.teardown();
     if (C.confetti && C.confetti.clear) C.confetti.clear();
     if (root && root.parentNode) root.parentNode.removeChild(root);
     root = null;
   }
 
-  /* The way out. Escape, and later the offer after a fourth miss. */
+  /* The way out. Escape, and later the offer after a fourth miss. It
+     goes through the same landing as a holed putt, so a skipper is not
+     punished with a lesser arrival. */
   G.skip = function () {
     if (done) return;
     done = true;
-    clearTimeout(holdTimer);
-    wipe();
+    land();
   };
 
   G.state = function () { return state; };
@@ -15516,8 +16211,9 @@
      from published golf research. See CONTINUITY.md for sources. */
 
   var DEAD_PX = 10;        /* under this a drag is a tap, and taps do nothing */
-  var DEAD_MS = 60;        /* and under this it is a stray touch */
-  var CANCEL_MULT = 1.6;   /* drag past this much of max and the shot is off */
+  var DEAD_MS = 60;        /* and under this a SHORT one is a stray touch */
+  var FLICK_PX = 34;       /* past this the pull is deliberate, however quick */
+  var CANCEL_MULT = 3;     /* only an absurd drag is refused, and it still counts */
   var POWER_CURVE = 1.35;  /* spends thumb travel on the short putts a gate lives on */
   var GUIDE_FRAC = 0.30;   /* the line shows a third of the roll, never the whole answer */
   var GUIDE_MAX = 110;
@@ -15597,13 +16293,17 @@
       html: C.svg.putter(64) });
     st.hint = C.el("p.p-hint", { role: "status" });
 
-    /* Silent until asked. A lawyer opening this on a phone in a quiet
-       office is the default case, so the switch starts off and the
-       AudioContext is not even built until it is thrown. Throwing it is
-       itself the user gesture the autoplay policy wants. */
+    /* The mute. The button on the poster already armed the context and
+       started the bed, so this arrives lit and its job is to turn the
+       page off rather than on. It is drawn from the live state rather
+       than hard coded to off, because a switch that shows the wrong
+       position is worse than no switch. */
+    var lit = !!(C.gsound && C.gsound.on);
     st.sound = C.el("button.p-sound", { type: "button",
-      "aria-pressed": "false", "aria-label": "Sound off", title: "Sound" },
-      [C.node(C.svg.speaker(16, false))]);
+      "aria-pressed": lit ? "true" : "false",
+      "aria-label": lit ? "Sound on" : "Sound off", title: "Sound" },
+      [C.node(C.svg.speaker(16, lit))]);
+    if (lit) st.sound.classList.add("on");
     st.sound.addEventListener("click", function (e) {
       e.stopPropagation();
       if (!C.gsound) return;
@@ -15694,9 +16394,25 @@
     var len = Math.hypot(dx, dy);
     var dt = performance.now() - st.t0;
 
-    /* Both gates, or a stray tap on the way past becomes a shot. */
-    if (len < DEAD_PX || dt < DEAD_MS) { say("Pull back and let go."); return; }
-    if (len > maxDrag() * CANCEL_MULT) { say("Too far. Try again."); return; }
+    /* A tap is not a shot. The time gate guards only the short drags:
+       a flick is a real gesture on a phone, and rejecting it silently is
+       half of how this door got stuck shut. */
+    if (len < DEAD_PX) { say("Pull back and let go."); return; }
+    if (len < FLICK_PX && dt < DEAD_MS) { say("Pull back and let go."); return; }
+
+    /* Past full power the shot still goes. "Pull back and let go" has to
+       mean what it says, and overshooting is the commonest thing a thumb
+       does. Only an absurd drag is refused, and even that one counts as
+       a miss, so the ladder keeps walking toward the offer instead of
+       leaving the player in a loop with no way forward. */
+    if (len > maxDrag() * CANCEL_MULT) {
+      st.misses++;
+      ladder();
+      /* The ladder owns the message once it has something better to
+         offer than a note about pull length. */
+      if (st.misses < 3) say("That is a drive, not a putt.");
+      return;
+    }
 
     var t = C.clamp(len / maxDrag(), 0, 1);
     var speed = 240 + Math.pow(t, POWER_CURVE) * 1180;
@@ -15704,7 +16420,14 @@
     strike(-dx / len * speed, -dy / len * speed);
   }
 
-  function onCancel() { endDrag(); }
+  /* The ball rests low on the screen, so on a phone the pull runs down
+     into the system's own swipe-up zone and iOS takes the gesture back.
+     That arrives here. Say so, or the shot vanishes with no explanation
+     and the game reads as broken. */
+  function onCancel() {
+    endDrag();
+    say("Pull back and let go.");
+  }
 
   function endDrag() {
     if (!st) return;
@@ -15745,8 +16468,14 @@
     }
   }
 
+  /* The pull is vertical, so the budget comes from the height and not
+     from the narrow side. On every desktop shape the two are the same
+     number, because the window is wider than it is tall. On a phone held
+     upright they are not: the old line spent the whole budget in 118px
+     and refused anything past 189px, which is shorter than a thumb
+     travels, so a natural pull was rejected every time. */
   function maxDrag() {
-    return 0.30 * Math.min(window.innerWidth, window.innerHeight);
+    return 0.30 * window.innerHeight;
   }
 
   /* ---- aiming feedback ---------------------------------------------- */
@@ -15947,6 +16676,7 @@
      walk it in. Nobody bounces off a business link over a missed putt. */
   function ladder() {
     if (!st) return;
+    offerSkip();
     if (st.misses === 1) { say("Again."); return; }
     if (st.misses === 2) { say("A little more pace."); return; }
     if (st.misses === 3) { showRead(); say("Here is the line."); return; }
@@ -15959,6 +16689,21 @@
       st.root.appendChild(st.offer);
       requestAnimationFrame(function () { st && st.offer.classList.add("on"); });
     }
+  }
+
+  /* A keyboard has Escape and a phone has nothing, so without this the
+     only way past the putt on touch is to sink it. One quiet line, from
+     the first miss on, and it never grows louder. */
+  function offerSkip() {
+    if (!st || st.skip) return;
+    st.skip = C.el("button.p-skip", { type: "button",
+      text: "Skip to the workspace" });
+    st.skip.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (C.green && C.green.skip) C.green.skip();
+    });
+    st.root.appendChild(st.skip);
+    requestAnimationFrame(function () { st && st.skip.classList.add("on"); });
   }
 
   function showRead() {
@@ -16467,6 +17212,21 @@
     return true;
   };
 
+  /* Turn sound ON from inside a gesture, which is what the button on
+     the poster is. This is the one place the page decides for the
+     visitor, and it is deliberate: the door is now a deliberate press
+     rather than a timer, so the press can carry the music with it. The
+     mute is on screen from that instant onward and never leaves.
+
+     It still cannot make noise on arrival. Nothing here runs until
+     somebody has clicked something. */
+  S.enable = function () {
+    if (!S.available) { S.on = false; return false; }
+    if (!S.arm()) { S.on = false; return false; }
+    S.on = true;
+    return true;
+  };
+
   S.toggle = function () {
     if (!S.available) { S.on = false; return false; }
     S.on = !S.on;
@@ -16476,8 +17236,10 @@
     if (S.on && !S.arm()) S.on = false;
     /* Off means off now, not at the end of the roll. The roll is the one
        voice long enough to still be hissing after somebody reaches for
-       the switch, which is the moment they least want to hear it. */
+       the switch, which is the moment they least want to hear it. The
+       bed is longer still, so it goes on the same frame. */
     if (!S.on) stopRoll();
+    S.afterToggle();
     return S.on;
   };
 
@@ -16716,7 +17478,1230 @@
     } catch (e) {}
   };
 
+  /* ================================================================== */
+  /* THE BED. Music, and still not a file.                              */
+  /*                                                                    */
+  /* Royalty free by construction rather than by licence: nothing here  */
+  /* is recorded, so there is nothing to clear. Four detuned voices on  */
+  /* a stacked fifth and octave, through one lowpass a slow LFO walks   */
+  /* so it breathes instead of sitting there. No rhythm and no melody,  */
+  /* because this plays under type somebody is trying to read. A bed,   */
+  /* not a tune.                                                        */
+  /*                                                                    */
+  /* Forty lines against the two hundred kilobytes a loop of pad would  */
+  /* have cost, and the page keeps its zero network requests.           */
+  /* ================================================================== */
+
+  var bed = null;
+  var bedWanted = false;
+
+  /* Root, fifth, octave, and the third above it. Low enough to stay */
+  /* under the tock and the roll, which still have to cut through.   */
+  var BED = [110, 164.81, 220, 329.63];
+
+  S.bed = function (on) {
+    if (on === false) { bedWanted = false; stopBed(); return; }
+    bedWanted = true;
+    if (!ok() || bed) return;
+    try {
+      var t = ctx.currentTime;
+
+      var lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(430, t);
+      lp.Q.setValueAtTime(0.7, t);
+
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      /* A minute and a half of fade in. Anything faster announces      */
+      /* itself, and the whole job of a bed is to have been there.      */
+      g.gain.exponentialRampToValueAtTime(0.024, t + 1.6);
+
+      lp.connect(g); g.connect(master);
+
+      /* The breath. 0.07 Hz is one slow swell every fourteen seconds,  */
+      /* which is under the rate at which a listener starts counting.   */
+      var lfo = ctx.createOscillator();
+      lfo.type = "sine";
+      lfo.frequency.setValueAtTime(0.07, t);
+      var lfoAmt = ctx.createGain();
+      lfoAmt.gain.setValueAtTime(90, t);
+      lfo.connect(lfoAmt); lfoAmt.connect(lp.frequency);
+      lfo.start(t);
+
+      var voices = [];
+      for (var i = 0; i < BED.length; i++) {
+        var o = ctx.createOscillator();
+        o.type = i > 1 ? "sine" : "triangle";
+        /* Seeded detune, so two visits to this page hear the same     */
+        /* chord. Nothing on this green is ever random.                */
+        o.frequency.setValueAtTime(BED[i] * (1 + (rand() - 0.5) * 0.004), t);
+        var vg = ctx.createGain();
+        vg.gain.setValueAtTime(i > 1 ? 0.34 : 0.62, t);
+        o.connect(vg); vg.connect(lp);
+        o.start(t);
+        voices.push(o, vg);
+      }
+
+      bed = { g: g, lp: lp, lfo: lfo, lfoAmt: lfoAmt, voices: voices };
+    } catch (e) { bed = null; }
+  };
+
+  /* Down over a second, landing on a linear zero because an            */
+  /* exponential ramp cannot reach it and a gain left at 0.0001 clicks. */
+  function stopBed() {
+    if (!bed) return;
+    var b = bed;
+    bed = null;
+    try {
+      var t = ctx.currentTime;
+      b.g.gain.cancelScheduledValues(t);
+      b.g.gain.setValueAtTime(Math.max(b.g.gain.value, 0.0001), t);
+      b.g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+      b.g.gain.linearRampToValueAtTime(0, t + 1.15);
+      for (var i = 0; i < b.voices.length; i += 2) {
+        try { b.voices[i].stop(t + 1.2); } catch (e) {}
+      }
+      try { b.lfo.stop(t + 1.2); } catch (e) {}
+      setTimeout(function () {
+        var all = b.voices.concat([b.g, b.lp, b.lfo, b.lfoAmt]);
+        for (var j = 0; j < all.length; j++) {
+          try { all[j].disconnect(); } catch (e) {}
+        }
+      }, 1400);
+    } catch (e) {}
+  }
+
+  /* The arrival. Four notes resolving up to the octave, fired once as
+     the fog lifts. A bed that simply stops has no ending; this is the
+     ending, and it is what makes the silence afterwards read as the
+     visitor being handed the room rather than as the music failing. */
+  S.arrive = function () {
+    if (!ok()) return;
+    var NOTES = [[220, 0, 0.9], [293.66, 0.09, 0.9], [329.63, 0.18, 1.1], [440, 0.3, 1.6]];
+    try {
+      var t = ctx.currentTime;
+      for (var i = 0; i < NOTES.length; i++) {
+        var n = NOTES[i];
+        var g = ctx.createGain();
+        var end = fall(g.gain, t + n[1], 0.105, 0.014, n[2]);
+        g.connect(master);
+
+        var o = ctx.createOscillator();
+        o.type = "sine";
+        o.frequency.setValueAtTime(n[0], t + n[1]);
+        o.connect(g);
+
+        /* A triangle an octave up at a third of the level. Enough to
+           stop a bare sine reading as a test tone. */
+        var o2 = ctx.createOscillator();
+        o2.type = "triangle";
+        o2.frequency.setValueAtTime(n[0] * 2, t + n[1]);
+        var g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0.3, t + n[1]);
+        o2.connect(g2); g2.connect(g);
+
+        reap(o, [g]);
+        reap(o2, [g2]);
+        o.start(t + n[1]); o.stop(end);
+        o2.start(t + n[1]); o2.stop(end);
+      }
+    } catch (e) {}
+  };
+
+  /* The switch has to know about the bed too. Turning sound on part way
+     through joins the bed already wanted; turning it off stops the
+     drone on the same frame it stops the roll, because the drone is the
+     one voice long enough to still be sounding when somebody reaches
+     for the switch, which is the moment they least want to hear it. */
+  S.afterToggle = function () {
+    if (S.on && bedWanted) S.bed(true);
+    else if (!S.on) stopBed();
+  };
+
   C.gsound = S;
+
+})(window.C = (window.C || {}));
+
+
+/* ================================================================
+   src/js/74-veil.js
+   ================================================================ */
+/* =====================================================================
+   74-veil.js   the glass.
+
+   One sheet of fogged glass over the whole workspace, with a hole cut
+   in it wherever the tour is pointing, a caption beside the hole, and
+   hairlines drawn from one part of the product to another.
+
+   This file is mechanism and nothing else. It knows how to blur, how to
+   cut, how to place a card so it never covers the thing it describes,
+   and how to draw a line between two elements. It knows nothing about
+   Caddy. 75-welcome.js and 76-tour.js are what it is spent on.
+
+   TWO PLATES, NEVER ONE. Element opacity multiplies whatever the
+   backdrop filter produced, so a single fading black would drag the
+   blur down with it and the two could never sit on separate curves.
+   One plate of pure black, one plate of blur.
+
+   THE HOLE IS A SEAM POLYGON. Ten points: down the left edge, in along
+   a seam, around the hole the other way, back out the seam, and around
+   the rest. It is the only cutout technique that needs neither
+   fill-rule support nor path(), so it cannot silently degrade to a
+   fogged screen with nothing visible through it. Corners are squared
+   off by definition, which is what the ring on top is for.
+   ===================================================================== */
+(function (C) {
+  "use strict";
+
+  var V = {};
+
+  var root = null, ink = null, glass = null, cardSlot = null;
+  var cap = null, rings = null, wires = null, dots = null, skipBtn = null;
+  var offs = [];
+  var spotEls = [], spotPad = 8;
+
+  function stage() { return C.$("stage"); }
+
+  /* ---- open and close ------------------------------------------------ */
+
+  V.open = function () {
+    if (root) return root;
+    ink = C.el("i.wc-ink", { "aria-hidden": "true" });
+    glass = C.el("i.wc-veil", { "aria-hidden": "true" });
+    wires = C.node('<svg class="tr-wires" aria-hidden="true" ' +
+      'xmlns="http://www.w3.org/2000/svg"></svg>');
+    rings = C.el("div.tr-rings", { "aria-hidden": "true" });
+    cardSlot = C.el("div.wc-card", { role: "status", "aria-live": "polite" });
+
+    root = C.el("div#welcome.wc.wc-black", null, [ink, glass, wires, rings, cardSlot]);
+    stage().appendChild(root);
+
+    offs.push(C.on(window, "resize", V.remeasure));
+    return root;
+  };
+
+  V.node = function () { return root; };
+  V.cardSlot = function () { return cardSlot; };
+
+  V.close = function () {
+    for (var i = 0; i < offs.length; i++) offs[i]();
+    offs = [];
+    if (root && root.parentNode) root.parentNode.removeChild(root);
+    root = ink = glass = cardSlot = cap = rings = wires = dots = skipBtn = null;
+    spotEls = [];
+  };
+
+  /* ---- the three states ---------------------------------------------- */
+
+  V.fog = function () {
+    if (!root) return;
+    root.classList.remove("wc-black");
+    root.classList.add("wc-fog");
+  };
+
+  V.lift = function () {
+    if (!root) return;
+    root.classList.add("wc-clear");
+  };
+
+  /* ---- the holes ------------------------------------------------------
+     Pass one element, or several, or nothing to fog the lot. Several
+     matters: a hairline that says "this came from there" is worthless
+     if either end is under the blur, so chapter one has to show the
+     document name AND the case at once.
+
+     MULTIPLE HOLES OUT OF ONE POLYGON. The seam runs from the bottom
+     edge up into each hole and back down, and the holes are walked left
+     to right, so the pen never has to cross a hole it has not opened
+     yet. Two rules follow and both are enforced below: sort by x, and
+     merge any two holes whose x ranges overlap, because a seam dropped
+     through an open hole tears the fog in a straight line.
+     -------------------------------------------------------------------- */
+
+  V.spot = function (els, pad) {
+    spotEls = !els ? [] : (els.length !== undefined ? [].slice.call(els) : [els]);
+    spotEls = spotEls.filter(Boolean);
+    spotPad = typeof pad === "number" ? pad : 8;
+    V.remeasure();
+  };
+
+  /* A bounding rect is geometry, not visibility. A paragraph scrolled
+     half under Word's ribbon still reports its full box, so a hole cut
+     from that rect exposes the ribbon along with it, and the tour ends
+     up pointing at a toolbar while talking about a sentence. Walk up and
+     intersect with anything that clips, which is what the visitor can
+     actually see. */
+  function visible(el) {
+    var r = C.rect(el);
+    var box = { x: r.x, y: r.y, x2: r.x + r.w, y2: r.y + r.h };
+    var p = el.parentNode;
+    while (p && p.nodeType === 1 && p !== document.body) {
+      var cs = getComputedStyle(p);
+      if (cs.overflow !== "visible" || cs.contain.indexOf("paint") >= 0) {
+        var pr = C.rect(p);
+        box.x = Math.max(box.x, pr.x);
+        box.y = Math.max(box.y, pr.y);
+        box.x2 = Math.min(box.x2, pr.x + pr.w);
+        box.y2 = Math.min(box.y2, pr.y + pr.h);
+      }
+      p = p.parentNode;
+    }
+    return box;
+  }
+
+  function boxes() {
+    var W = window.innerWidth, H = window.innerHeight;
+    var out = [];
+    spotEls.forEach(function (el) {
+      if (!el || !el.getClientRects || !el.getClientRects().length) return;
+      var v = visible(el);
+      if (v.x2 - v.x < 4 || v.y2 - v.y < 4) return;
+      out.push({
+        x: Math.max(0, Math.round(v.x - spotPad)),
+        y: Math.max(0, Math.round(v.y - spotPad)),
+        x2: Math.min(W, Math.round(v.x2 + spotPad)),
+        y2: Math.min(H, Math.round(v.y2 + spotPad))
+      });
+    });
+    out.sort(function (a, b) { return a.x - b.x; });
+
+    /* Merge on x overlap. Two holes side by side vertically would put a
+       seam through one of them, and the fog would come apart. */
+    var merged = [];
+    out.forEach(function (b) {
+      var last = merged[merged.length - 1];
+      if (last && b.x <= last.x2) {
+        last.x2 = Math.max(last.x2, b.x2);
+        last.y = Math.min(last.y, b.y);
+        last.y2 = Math.max(last.y2, b.y2);
+      } else merged.push(b);
+    });
+    return merged;
+  }
+
+  V.remeasure = function () {
+    if (!root) return;
+    place();
+    var bs = boxes();
+    if (!bs.length) {
+      glass.style.clipPath = "";
+      glass.style.webkitClipPath = "";
+      C.qa("i", rings).forEach(function (r) { r.hidden = true; });
+      drawWires();
+      return;
+    }
+
+    var W = window.innerWidth, H = window.innerHeight;
+    var p = "0px 0px, 0px " + H + "px";
+    bs.forEach(function (b) {
+      p += ", " + b.x + "px " + H + "px" +
+           ", " + b.x + "px " + b.y + "px" +
+           ", " + b.x2 + "px " + b.y + "px" +
+           ", " + b.x2 + "px " + b.y2 + "px" +
+           ", " + b.x + "px " + b.y2 + "px" +
+           ", " + b.x + "px " + H + "px";
+    });
+    p += ", " + W + "px " + H + "px, " + W + "px 0px";
+    glass.style.clipPath = "polygon(" + p + ")";
+    glass.style.webkitClipPath = "polygon(" + p + ")";
+
+    /* One ring per hole. The polygon squares the corners off by
+       definition, and the ring is both the rounding and the thing the
+       eye actually reads as "here". */
+    while (rings.childNodes.length < bs.length) {
+      rings.appendChild(C.el("i", { "aria-hidden": "true" }));
+    }
+    C.qa("i", rings).forEach(function (r, k) {
+      var b = bs[k];
+      if (!b) { r.hidden = true; return; }
+      r.hidden = false;
+      r.style.left = b.x + "px";
+      r.style.top = b.y + "px";
+      r.style.width = (b.x2 - b.x) + "px";
+      r.style.height = (b.y2 - b.y) + "px";
+    });
+
+    drawWires();
+  };
+
+  /* ---- the caption -----------------------------------------------------
+     It is placed against the hole rather than centred, and it is placed
+     on whichever side has room, because a card that covers the thing it
+     is describing is an instruction to look at nothing.
+     -------------------------------------------------------------------- */
+
+  V.say = function (o) {
+    if (!root) return;
+    if (!cap) {
+      cap = C.el("aside.tr-cap", { role: "status", "aria-live": "polite" });
+      root.appendChild(cap);
+    }
+    C.clear(cap);
+    cap.classList.remove("on");
+
+    var head = C.el("div.tr-cap-head", null, [
+      C.el("b.tr-lead", { text: o.lead || "" })
+    ]);
+    if (o.mark) head.appendChild(C.el("i.tr-cap-mark", { "aria-hidden": "true" },
+      [C.node(o.mark)]));
+    cap.appendChild(head);
+
+    /* A path is evidence, so it is drawn as a path rather than bolded
+       inside a sentence. This is the same argument the pane's own
+       callout makes and it is the best one the product has. */
+    if (o.crumbs && o.crumbs.length) {
+      var cr = C.el("div.tr-path");
+      o.crumbs.forEach(function (seg, i) {
+        if (i) cr.appendChild(C.el("i.tr-sep", { "aria-hidden": "true", text: "\u203a" }));
+        cr.appendChild(C.el("span", { text: seg }));
+      });
+      cap.appendChild(cr);
+    }
+
+    cap.appendChild(C.el("p", { text: o.text || "" }));
+    if (o.note) cap.appendChild(C.el("p.tr-note", { text: o.note }));
+
+    place();
+    void cap.offsetWidth;
+    cap.classList.add("on");
+    if (o.text) C.say((o.lead ? o.lead + ". " : "") + o.text);
+  };
+
+  V.hush = function () { if (cap) cap.classList.remove("on"); };
+  V.capNode = function () { return cap; };
+
+  /* Put the card where the hole is not. Preference order is the side
+     with the most room, then vertical centring on the hole, then a hard
+     clamp inside the viewport with a margin. */
+  function place() {
+    if (!cap || !root) return;
+    var W = window.innerWidth, H = window.innerHeight;
+    var cw = cap.offsetWidth || 320, ch = cap.offsetHeight || 130;
+    var M = 16;
+
+    /* Anchored on the LAST element passed, which is the subject. The
+       others are context and the card does not owe them room. */
+    var subject = spotEls[spotEls.length - 1];
+    if (!subject || !subject.getClientRects || !subject.getClientRects().length) {
+      cap.style.left = Math.round((W - cw) / 2) + "px";
+      cap.style.top = Math.round(H * 0.62) + "px";
+      return;
+    }
+    var r = C.rect(subject);
+    var left, top;
+    var roomL = r.x, roomR = W - (r.x + r.w);
+
+    if (Math.max(roomL, roomR) >= cw + M * 2) {
+      left = roomL >= roomR ? r.x - cw - M - spotPad : r.x + r.w + M + spotPad;
+      top = r.cy - ch / 2;
+    } else {
+      /* Nothing either side, so go above or below, whichever is roomier.
+         This is the phone case and it is the common one. */
+      left = r.cx - cw / 2;
+      top = (r.y > H - (r.y + r.h)) ? r.y - ch - M - spotPad : r.y + r.h + M + spotPad;
+    }
+    cap.style.left = Math.round(C.clamp(left, M, W - cw - M)) + "px";
+    cap.style.top = Math.round(C.clamp(top, M, H - ch - M)) + "px";
+  }
+
+  /* ---- the hairlines ---------------------------------------------------
+     A line from one part of the product to another, drawn rather than
+     faded in, because a line that draws itself says "this came from
+     there" and a line that appears says "here is a line".
+
+     Nothing here is decorative. Each one is an argument that two things
+     on opposite sides of the screen are the same fact.
+     -------------------------------------------------------------------- */
+
+  var links = [];
+
+  V.link = function (from, to, opts) {
+    links.push({ from: from, to: to, o: opts || {} });
+    drawWires();
+  };
+
+  V.unlink = function () {
+    links = [];
+    if (wires) wires.innerHTML = "";
+  };
+
+  /* The whole thing is written as ONE markup string and assigned to the
+     svg's own innerHTML, rather than built node by node through C.node.
+     C.node parses into a div, and the HTML parser only namespaces a
+     top level <svg>: a bare <path> or <circle> parsed in an HTML
+     context comes out an unknown HTML element, appends without
+     complaint, and paints absolutely nothing. Assigning innerHTML ON an
+     svg element parses in the SVG namespace, which is the fix. */
+  function drawWires() {
+    if (!wires) return;
+    if (!links.length) { wires.innerHTML = ""; return; }
+    var W = window.innerWidth, H = window.innerHeight;
+    wires.setAttribute("viewBox", "0 0 " + W + " " + H);
+    wires.setAttribute("width", W);
+    wires.setAttribute("height", H);
+
+    var out = "";
+    var delays = [];
+    links.forEach(function (L, i) {
+      if (!L.from || !L.to) return;
+      if (!L.from.getClientRects || !L.from.getClientRects().length) return;
+      if (!L.to.getClientRects || !L.to.getClientRects().length) return;
+      var a = C.rect(L.from), b = C.rect(L.to);
+
+      /* Leave from the edge that faces the destination, so the cable
+         never crosses back over the thing it started at. */
+      var right = a.cx < b.cx;
+      var ax = right ? a.x + a.w : a.x;
+      var ay = a.cy;
+      var bx = right ? b.x : b.x + b.w;
+      var by = b.cy;
+      var lift = Math.min(180, Math.max(52, Math.abs(bx - ax) * 0.42));
+      var s = right ? 1 : -1;
+
+      var d = "M " + ax.toFixed(1) + " " + ay.toFixed(1) +
+        " C " + (ax + lift * s).toFixed(1) + " " + ay.toFixed(1) + ", " +
+        (bx - lift * s).toFixed(1) + " " + by.toFixed(1) + ", " +
+        bx.toFixed(1) + " " + by.toFixed(1);
+
+      /* A stagger, so two cables read as two statements rather than as
+         one bracket thrown around the screen. */
+      delays.push(i * 260);
+      out += '<g class="tr-wire">' +
+        '<path d="' + d + '" fill="none" pathLength="100"/>' +
+        '<circle class="tr-wire-a" cx="' + ax.toFixed(1) + '" cy="' + ay.toFixed(1) + '" r="3.4"/>' +
+        '<circle class="tr-wire-b" cx="' + bx.toFixed(1) + '" cy="' + by.toFixed(1) + '" r="4.4"/>' +
+        "</g>";
+    });
+    wires.innerHTML = out;
+    C.qa(".tr-wire", wires).forEach(function (g, i) {
+      var p = C.q("path", g), h = C.q(".tr-wire-b", g);
+      if (p) p.style.animationDelay = delays[i] + "ms";
+      if (h) h.style.animationDelay = (delays[i] + 640) + "ms";
+    });
+  }
+
+  /* ---- progress ---------------------------------------------------------
+     Four dots, because the single most useful thing you can tell
+     somebody watching a tour is how much of it is left. Without this the
+     honest question "how long does this go on" has no answer and the
+     only way to find out is to leave.
+     ------------------------------------------------------------------------ */
+
+  V.progress = function (i, n) {
+    if (!root) return;
+    if (!dots) {
+      dots = C.el("div.tr-dots", { "aria-hidden": "true" });
+      root.appendChild(dots);
+    }
+    if (dots.childNodes.length !== n) {
+      C.clear(dots);
+      for (var k = 0; k < n; k++) dots.appendChild(C.el("i"));
+    }
+    C.qa("i", dots).forEach(function (d, k) {
+      d.classList.toggle("on", k < i);
+      d.classList.toggle("at", k === i - 1);
+    });
+    dots.hidden = false;
+  };
+
+  V.noProgress = function () { if (dots) dots.hidden = true; };
+
+  /* ---- the way out ------------------------------------------------------ */
+
+  V.skip = function (fn, label) {
+    if (!root) return;
+    if (!skipBtn) {
+      skipBtn = C.el("button.wc-skip", { type: "button" });
+      root.appendChild(skipBtn);
+    }
+    skipBtn.textContent = label || "Skip";
+    skipBtn.onclick = function (e) { e.stopPropagation(); fn(); };
+  };
+
+  C.veil = V;
+
+})(window.C = (window.C || {}));
+
+
+/* ================================================================
+   src/js/75-welcome.js
+   ================================================================ */
+/* =====================================================================
+   75-welcome.js   the arrival.
+
+   The black, the fog, and the two cards that say what this is. Then it
+   hands the glass to 76-tour.js, which is where the product does the
+   talking instead.
+
+   TIMERS ARE RAW, AND THAT IS DELIBERATE. Every other file in this
+   build wraps a duration in C.ms() so reduced motion collapses it. Not
+   here. 80-motion.css already forces animation-duration to .001ms for
+   everything under prefers-reduced-motion, so the arcs are gone
+   already. Collapsing the DWELL as well would flash the type past a
+   visitor in one frame, which is the opposite of the accommodation they
+   asked for. Calm gets the same reading time and hard cuts instead of
+   movement. Precedent: the guide's own 7000 and 12000 at 80-guide.js
+   are raw for the same reason.
+
+   THE GLASS OWNS THE BLACK, not the green. The green fades out on top
+   of it and then strips itself, so there is never a frame of bare desk
+   between the two scenes. That is why --z-welcome sits UNDER --z-green.
+   ===================================================================== */
+(function (C) {
+  "use strict";
+
+  var W = {};
+
+  var live = false, t0 = 0, spent = 0;
+  var timers = [];
+  var offs = [];
+  var trail = [];
+
+  /* The beat sheet, in milliseconds from the moment the black goes up. */
+  var T = {
+    fog:       620,   /* black cross-dissolves into fog                */
+    b1in:      700,   /* the mark, the headline, the rolling full stop */
+    paneOpen: 1300,   /* Caddy arrives beside the draft, blurred       */
+    b1out:    1980,
+    b2in:     2240,   /* the sentence                                  */
+    cases:    2360,   /* door one, behind the blur                     */
+    templates:3560,   /* door two, behind the blur                     */
+    b2out:    4900,
+    hand:     5060    /* the tour takes the glass                      */
+  };
+
+  function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+  function mark(name) { trail.push(name); }
+
+  function stopTimers() {
+    for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+    timers = [];
+  }
+  function unwire() {
+    for (var i = 0; i < offs.length; i++) offs[i]();
+    offs = [];
+  }
+
+  /* ---- the cards ------------------------------------------------------ */
+
+  function build() {
+    var slot = C.veil.cardSlot();
+
+    var dot = C.el("i.wc-dot", { "aria-hidden": "true", html: C.svg.ball(22, true) });
+
+    /* Beat one. The mark, then the line, then the full stop rolls in
+       and parks. The poster spent the whole campaign teaching that the
+       period at the end of "Get a caddy" was a golf ball. This is the
+       second telling, and the second telling is the one where the
+       visitor is already in on it. */
+    slot.appendChild(C.el("div.wc-beat.wc-b1", null, [
+      C.el("div.wc-mark", { "aria-hidden": "true" },
+        [C.node(C.svg.lockMark(72, true))]),
+      C.el("h2.wc-head", null, [C.el("span", { text: "Welcome to Caddy" }), dot])
+    ]));
+
+    /* Beat two. The two nouns are the payload, so each one carries a
+       chip of the pane's own cream with that door's glyph on it. The
+       visitor sees both rooms named and marked before the pane has
+       drawn a single row, which turns what follows from instruction
+       into recognition. */
+    slot.appendChild(C.el("div.wc-beat.wc-b2", null, [
+      C.el("p.wc-line", null, [
+        "Caddy makes navigating ",
+        C.el("span.wc-key", null, [
+          C.el("i.wc-chip", { "aria-hidden": "true" }, [C.node(C.svg.doorCases(22))]),
+          C.el("b", { text: "casefiles" })
+        ]),
+        " or accessing ",
+        C.el("span.wc-key", null, [
+          C.el("i.wc-chip", { "aria-hidden": "true" }, [C.node(C.svg.doorTemplates(22))]),
+          C.el("b", { text: "templates" })
+        ]),
+        " easier, so you can focus on drafting."
+      ])
+    ]));
+  }
+
+  /* ---- open ---------------------------------------------------------- */
+
+  W.open = function () {
+    if (live || C.veil.node()) return;
+    live = true;
+    t0 = Date.now();
+    trail = [];
+
+    var root = C.veil.open();
+    build();
+    C.veil.skip(function () { W.finish(true); }, "Skip the intro");
+    mark("black");
+
+    /* Quiet the caddy for the duration. launchWord raises step("word")
+       on the next line and pane.open() raises step("pane") a second
+       later, and a plate printed behind the fog is a line nobody can
+       read about a thing they cannot see. With the step() fix in
+       80-guide.js these are deferred rather than burnt, and the tour
+       retires the ones it actually performs. */
+    C.store.set("ui.guideOn", false);
+
+    /* Park the callout. It subscribes to pane.view and closes itself
+       for good the first time the view is not "cases", so leaving it
+       armed through a tour that visits Templates would silently spend
+       the best moment in the product on an empty room. The tour draws
+       its own version of it, with a line, in chapter one. */
+    C.store.set("pane.callout", false);
+
+    /* Word, under the black, on the reply. Loading and pagination are
+       synchronous, so the sheets are drawn and measured before the next
+       line runs and the fog never lifts on a half built window. */
+    C.scene.toWorkspace("reply-msj");
+
+    /* Any input ends it. There is a floor under that so a stray finger
+       still travelling from the putt cannot eat the first card, which
+       is the same floor the guide plate and the callout both use. */
+    at(500, function () {
+      offs.push(C.on(document, "pointerdown", onStray, { capture: true }));
+      offs.push(C.on(document, "keydown", onStray, { capture: true }));
+    });
+
+    at(T.fog, function () { C.veil.fog(); mark("fog"); });
+
+    at(T.b1in, function () {
+      root.classList.add("wc-b1");
+      C.say("Welcome to Caddy.");
+      mark("b1");
+    });
+
+    at(T.paneOpen, function () { C.pane.open(); mark("pane"); });
+    at(T.b1out, function () { root.classList.add("wc-b1-out"); });
+
+    at(T.b2in, function () {
+      root.classList.add("wc-b2");
+      C.say("Caddy makes navigating casefiles or accessing templates easier, " +
+            "so you can focus on drafting.");
+      mark("b2");
+    });
+
+    at(T.cases, function () { C.pane.selectPaneTab("cases"); mark("cases"); });
+    at(T.templates, function () { C.pane.selectPaneTab("templates"); mark("templates"); });
+    at(T.b2out, function () { root.classList.add("wc-b2-out"); });
+    at(T.hand, function () { toTour(); });
+  };
+
+  function onStray() { W.finish(true); }
+
+  /* ---- handing the glass on -------------------------------------------- */
+
+  function toTour() {
+    if (!live) return;
+    live = false;
+    spent = Date.now() - t0;
+    stopTimers();
+    unwire();
+
+    var root = C.veil.node();
+    if (root) {
+      C.clear(C.veil.cardSlot());
+      root.classList.remove("wc-b1", "wc-b1-out", "wc-b2", "wc-b2-out");
+    }
+    mark("done");
+
+    /* The pane is open on the resolved case and the reply is on screen.
+       Everything the tour needs is already true. */
+    C.pane.selectPaneTab("cases");
+    if (C.tour && C.tour.run) C.tour.run();
+    else C.hand.over();
+  }
+
+  /* ---- the way out ------------------------------------------------------
+     One control, one meaning: it ends the WHOLE intro, the tour with
+     it. A visitor who skips at two seconds still lands with the pane
+     open on the resolved case rather than on a blank home screen.
+     ------------------------------------------------------------------------ */
+
+  W.finish = function (alsoTour) {
+    if (!live) {
+      if (alsoTour && C.tour && C.tour.flying()) C.tour.finish();
+      return;
+    }
+    live = false;
+    spent = Date.now() - t0;
+    stopTimers();
+    unwire();
+    if (!C.store.get("pane.open")) C.pane.open();
+    C.pane.selectPaneTab("cases");
+    mark("done");
+    C.hand.over();
+  };
+
+  W.flying = function () { return live; };
+  W.trail = function () { return trail.slice(); };
+  W.elapsed = function () { return live ? Date.now() - t0 : spent; };
+
+  C.welcome = W;
+
+  /* ================================================================== */
+  /* THE HANDOVER. One place, because the arrival, the tour and every   */
+  /* skip in either of them all have to end in exactly the same state,  */
+  /* and three copies of that is three chances to leave the guide off   */
+  /* or the callout parked.                                             */
+  /* ================================================================== */
+
+  C.hand = {
+    over: function () {
+      C.veil.unlink();
+      C.veil.lift();
+      if (C.gsound) {
+        C.gsound.arrive && C.gsound.arrive();
+        C.gsound.bed && C.gsound.bed(false);
+      }
+      setTimeout(function () { C.veil.close(); }, 700);
+
+      /* The ribbon flag and the pane were both shown rather than
+         described, so those two lines have been earned and retire. The
+         rest of the script is still waiting on the visitor's own first
+         move. */
+      C.guide.markSeen("word", "pane", "opened", "drive", "templates", "created");
+      C.store.set("ui.guideOn", true);
+      C.store.set("pane.callout", true);
+
+      /* The green root held focus and took it with it, which drops the
+         document into a state where the next keystroke goes nowhere.
+         Put the caret in the paper, which is where a lawyer wants it,
+         and only if nothing else has claimed focus in the meantime. */
+      if (document.activeElement === document.body || !document.activeElement) {
+        var host = C.docview && C.docview.host;
+        if (host) host.focus({ preventScroll: true });
+      }
+      C.say("The tour is over. Caddy is yours.");
+      C.status("Have a look around. Nothing here is saved and nothing leaves the page.", "ok");
+    }
+  };
+
+})(window.C = (window.C || {}));
+
+
+/* ================================================================
+   src/js/76-tour.js
+   ================================================================ */
+/* =====================================================================
+   76-tour.js   four chapters, and then it gets out of the way.
+
+   The arrival said what Caddy is. This shows it, by driving the real
+   product through the real controls behind a sheet of glass with a hole
+   cut over whatever is being talked about.
+
+   THE RULE THIS FILE OBEYS. Every action here goes through the same
+   click a visitor would make. Nothing reaches past the UI into a
+   private function to fake a result. If the tour can do it, the visitor
+   can do it, and if a control ever stops working the tour breaks loudly
+   instead of demonstrating something that is not there.
+
+   PACING. Four chapters, about nine seconds each. A caption arrives,
+   the product does the thing, the caption holds long enough to read at
+   an unhurried pace, and it leaves. There are dots in the corner so the
+   honest question "how long does this go on" has an answer without
+   anyone having to leave to find out, and a skip that ends the whole
+   thing on the spot.
+
+   TIMERS ARE RAW, not C.ms(). See the note at the top of 75-welcome.js:
+   80-motion.css already kills the motion under reduced motion, and
+   collapsing the reading time as well would be the opposite of the
+   accommodation the visitor asked for.
+   ===================================================================== */
+(function (C) {
+  "use strict";
+
+  var T = {};
+
+  var live = false;
+  var timers = [];
+  var offs = [];
+  var trail = [];
+  var chapter = 0;
+
+  var CHAPTERS = 4;
+
+  /* ---- the little runner ---------------------------------------------- */
+
+  function at(ms, fn) { timers.push(setTimeout(guard(fn), ms)); }
+
+  /* Every scheduled step is wrapped, so one missing element in one
+     chapter cannot take the whole tour down and strand a visitor behind
+     a sheet of glass with no way out. */
+  function guard(fn) {
+    return function () {
+      if (!live) return;
+      try { fn(); }
+      catch (e) { T.finish(); }
+    };
+  }
+
+  function stopTimers() {
+    for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+    timers = [];
+  }
+  function unwire() {
+    for (var i = 0; i < offs.length; i++) offs[i]();
+    offs = [];
+  }
+  function mark(s) { trail.push(s); }
+
+  /* ---- helpers over the real UI ---------------------------------------- */
+
+  function q(sel) { return C.q(sel); }
+
+  function click(el) {
+    if (!el) return false;
+    el.click();
+    return true;
+  }
+
+  /* A tree row is found by its visible text, the same way a person finds
+     it. Matching on an internal key would be a lie about what the tour
+     is doing. */
+  function rowNamed(sel, text) {
+    var rows = C.qa(sel);
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].textContent.indexOf(text) >= 0) return rows[i];
+    }
+    return null;
+  }
+
+  function paraWith(needle) {
+    var ps = C.qa(".sheet .p");
+    for (var i = 0; i < ps.length; i++) {
+      if (ps[i].textContent.indexOf(needle) >= 0) return ps[i];
+    }
+    return null;
+  }
+
+  function beat(i) {
+    chapter = i;
+    C.veil.progress(i, CHAPTERS);
+  }
+
+  /* ---- chapter one: it read the path ------------------------------------
+     The one moment worth the whole product. The document is open, the
+     pane has the right case in it, and nobody told it. Two hairlines
+     make the derivation visible: the file, its path, the matter.
+
+     The "no AI" line is not modesty. It is the claim: this is a lookup,
+     it is deterministic, and it cannot hallucinate a case because it is
+     not guessing at one.
+     ---------------------------------------------------------------------- */
+
+  function one() {
+    beat(1);
+    mark("found");
+    C.pane.selectPaneTab("cases");
+
+    /* BOTH ends, or the line means nothing. A hairline running out of
+       the blur into the blur is decoration; a hairline running from a
+       file name you can read to a case name you can read is the claim
+       this product is making. */
+    var head = q(".case-head-wrap") || q("#case-head");
+    C.veil.spot([q(".wd-docname"), head], 10);
+    C.veil.say({
+      lead: "It found the case",
+      crumbs: (C.pack && C.pack.DOC_PATH) || [],
+      text: "Caddy read the path this draft lives at and opened the matter it belongs to.",
+      note: "Nobody told it. Nothing guessed. There is no AI in this.",
+      mark: C.svg.noAI(26)
+    });
+
+    /* Draw the derivation, one segment at a time, so it reads as a
+       sentence rather than as a bracket. */
+    at(520, function () {
+      C.veil.link(q(".wd-docname"), C.veil.capNode());
+    });
+    at(1100, function () {
+      C.veil.link(C.veil.capNode(), q(".case-row .case-name"));
+    });
+
+    at(8200, function () { C.veil.hush(); C.veil.unlink(); });
+    at(8700, two);
+  }
+
+  /* ---- chapter two: and the rest of the drive ---------------------------
+     The obvious objection to chapter one is "what if it guessed wrong,
+     or I want a different matter". So this is the answer, and it is one
+     click, and the way back is one more.
+     ---------------------------------------------------------------------- */
+
+  function two() {
+    beat(2);
+    mark("drive");
+
+    var link = q(".drive-link");
+    C.veil.spot(link, 8);
+    C.veil.say({
+      lead: "Or all of them",
+      text: "One click opens the firm's whole drive, without leaving the page you are writing."
+    });
+
+    at(2100, function () {
+      click(q(".drive-link"));
+      mark("drive-open");
+      C.veil.spot(q("#case-tree"), 8);
+      C.veil.say({
+        lead: "Every matter",
+        text: "The same folders the firm already has, in the pane, beside the draft."
+      });
+    });
+
+    at(6400, function () {
+      click(q(".drive-back"));
+      mark("drive-back");
+      C.veil.spot(q(".case-head-wrap"), 10);
+      C.veil.say({
+        lead: "And back",
+        text: "Back to the matter you were drafting, exactly where you left it."
+      });
+    });
+
+    at(9600, function () { C.veil.hush(); });
+    at(10100, three);
+  }
+
+  /* ---- chapter three: the record, beside the draft ----------------------
+     A lawyer citing a deposition has the transcript in one hand and the
+     brief in the other. This is that, without the second window and
+     without leaving Word. The paragraph on screen cites 84:11-19, and
+     the tour opens exactly that page.
+     ---------------------------------------------------------------------- */
+
+  function three() {
+    beat(3);
+    mark("cite");
+
+    var cited = paraWith("84:11-19");
+    if (cited && cited.dataset && cited.dataset.bid && C.docview.reveal) {
+      C.docview.reveal(cited.dataset.bid);
+    }
+
+    C.veil.spot(cited, 6);
+    C.veil.say({
+      lead: "Citing the record",
+      text: "This paragraph leans on Divot Dep. 84:11-19. The page it means is two rows away."
+    });
+
+    /* Open the folder, then the file, the way anybody would. */
+    at(2600, function () {
+      var dir = rowNamed(".tree-dir", "Depositions");
+      if (dir && !dir.classList.contains("open")) click(dir);
+      C.veil.spot(q("#case-tree"), 8);
+    });
+
+    at(3600, function () {
+      var file = rowNamed(".tree-file", "Divot Depo Excerpt");
+      if (file) click(file);
+      else C.viewer.open({ f: "2026.06.11 Divot Depo Excerpt.pdf", ext: "pdf", size: 486400 },
+        ["BOGEY", "Divot-Fairway", "Depositions"]);
+      mark("viewer");
+    });
+
+    at(4400, function () {
+      var p = paraWith("84:11-19");
+      C.veil.spot([p, q("#view-viewer")], 8);
+      C.veil.say({
+        lead: "It opens beside the draft",
+        text: "The transcript reads in the pane, at the page you cited, with Word still under your hands."
+      });
+      C.veil.link(p, q("#view-viewer"));
+    });
+
+    at(9200, function () { C.veil.hush(); C.veil.unlink(); });
+    at(9700, four);
+  }
+
+  /* ---- chapter four: the forms, and the numbering -----------------------
+     The library, then the thing the library is actually for. Two
+     defenses go into Word numbered, one comes out, and the rest
+     renumber themselves, because the ordinal is a function of position
+     and is never stored anywhere.
+     ---------------------------------------------------------------------- */
+
+  function four() {
+    beat(4);
+    mark("templates");
+
+    C.pane.selectPaneTab("templates");
+    C.veil.spot(q("#pane"), 6);
+    C.veil.say({
+      lead: "The firm's own forms",
+      text: "Every form here came from this firm. Caddy ships with no legal language of its own."
+    });
+
+    /* Into the form that carries a defense bank. This is the same call
+       the chooser's own "Open in Word" makes. */
+    at(3000, function () {
+      var entry = C.sel.form((C.pack && C.pack.FEATURED) || "") ||
+        (C.pack.FORM_TABLE || []).filter(function (f) {
+          return f.companion && f.companion.defenses;
+        })[0];
+      if (!entry) { finale(); return; }
+      C.word.loadDoc({
+        key: "form-" + entry.key,
+        name: entry.name + ".docx",
+        title: entry.name,
+        path: (C.pack && C.pack.DOC_PATH) || [],
+        formKey: entry.key,
+        blocks: C.builder.compose(entry)
+      });
+      C.templates.enterCompanion(entry);
+      mark("form");
+      C.veil.spot(q("#defense-section") || q("#pane"), 6);
+      C.veil.say({
+        lead: "It read the form",
+        text: "An answer pleads defenses, so the bank for this one is already open."
+      });
+    });
+
+    /* Tick two, and let Word write them. */
+    at(6000, function () {
+      var boxes = C.qa("#def-list .mod-check").slice(0, 2);
+      boxes.forEach(function (b, i) {
+        setTimeout(guard(function () {
+          b.checked = true;
+          b.dispatchEvent(new Event("change", { bubbles: true }));
+        }), i * 420);
+      });
+      mark("picked");
+    });
+
+    at(7400, function () {
+      click(q(".build-go"));
+      mark("created");
+      var heads = C.qa(".sheet .k-defhead");
+      if (heads[0] && heads[0].dataset.bid) C.docview.reveal(heads[0].dataset.bid);
+    });
+
+    /* The claim is about the PAPER, so the paper is what gets the hole.
+       A list in a pane saying FIRST and SECOND proves nothing; the
+       headings in the document saying it is the whole point. */
+    at(8200, function () { showNumbers("Word owns the numbers",
+      "Both are in the paper now, numbered FIRST and SECOND as they went in."); });
+
+    /* And take one back out. */
+    at(11400, function () {
+      var rm = q("#cur-list .cur .remove");
+      if (rm) click(rm);
+      setTimeout(guard(function () { click(q("#cur-list .confirm .yes")); }), 700);
+      mark("removed");
+    });
+
+    at(12800, function () {
+      var heads = C.qa(".sheet .k-defhead");
+      if (heads[0] && heads[0].dataset.bid) C.docview.reveal(heads[0].dataset.bid);
+      showNumbers("Take one out",
+        "The one below it became the first. The ordinal is a position, so it cannot be wrong.");
+    });
+
+    at(16600, function () { C.veil.hush(); C.veil.unlink(); });
+    at(17100, finale);
+  }
+
+  /* Both ends of the same fact: the bank in the pane, the numbered
+     headings in the document, and a line saying they are one thing. */
+  function showNumbers(lead, text) {
+    var heads = C.qa(".sheet .k-defhead");
+    var list = q("#cur-list") || q("#defense-section");
+    C.veil.unlink();
+    C.veil.spot([heads[0], heads[1], list].filter(Boolean), 6);
+    C.veil.say({ lead: lead, text: text });
+    if (heads[0] && list) C.veil.link(list, heads[0]);
+  }
+
+  /* ---- and it gets out of the way ---------------------------------------- */
+
+  /* ---- and it gets out of the way -----------------------------------------
+     The glass goes FIRST and the paper comes after it. Confetti lives in
+     #stage with no z-index of its own, so anything thrown while the veil
+     is still mounted lands behind a 3900 and is never seen. Hand over,
+     let the veil finish leaving, and then celebrate on a clear screen.
+     -------------------------------------------------------------------------- */
+
+  function finale() {
+    if (!live) return;
+    mark("finale");
+    C.veil.spot(null);
+    C.veil.noProgress();
+    C.veil.hush();
+    C.veil.unlink();
+
+    T.finish();
+
+    /* Three bursts across the top of the workspace rather than one out
+       of the hole. The hole's celebration was a reward for a putt and it
+       came from a point, so a point is where it belonged. This one is
+       for the whole room, and it should fall over the whole room.
+
+       Staggered 190ms, because two bursts closer than about 150 fuse
+       into one in the eye and the third stops it reading as a pair. */
+    setTimeout(function () {
+      var W = window.innerWidth;
+      var stg = C.$("stage");
+      if (!C.confetti || !C.confetti.pop || !stg || C.env.calm) return;
+
+      /* Its own layer, above every window. See .tr-cheer. */
+      var cheer = C.el("div.tr-cheer", { "aria-hidden": "true" });
+      stg.appendChild(cheer);
+
+      [[0.30, 150, 34, 62, "caddy-tour-1", 0],
+       [0.62, 116, 30, 72, "caddy-tour-2", 190],
+       [0.85, 172, 26, 56, "caddy-tour-3", 380]
+      ].forEach(function (b) {
+        setTimeout(function () {
+          if (!cheer.parentNode) return;
+          C.confetti.pop(W * b[0], b[1], cheer,
+            { seed: b[4], count: b[2], spread: b[3] });
+          if (C.gsound && C.gsound.pop) C.gsound.pop();
+        }, b[5]);
+      });
+
+      /* The layer goes when the paper is done, or it would sit over the
+         workspace forever eating nothing but still being there. */
+      setTimeout(function () {
+        if (cheer.parentNode) cheer.parentNode.removeChild(cheer);
+      }, 4200);
+    }, 820);
+  }
+
+  /* ---- run, and the way out ------------------------------------------------ */
+
+  T.run = function () {
+    if (live) return;
+    live = true;
+    trail = [];
+    C.veil.skip(T.finish, "Skip the tour");
+
+    /* Any real input ends the tour. The tour's own clicks are element
+       .click() calls, which raise a click and never a pointerdown, so
+       they cannot trip this. That distinction is the whole reason the
+       listener is on pointerdown. */
+    offs.push(C.on(document, "pointerdown", T.finish, { capture: true }));
+    offs.push(C.on(document, "keydown", T.finish, { capture: true }));
+
+    one();
+  };
+
+  T.finish = function () {
+    if (!live) return;
+    live = false;
+    stopTimers();
+    unwire();
+    C.veil.spot(null);
+    C.veil.noProgress();
+    C.veil.hush();
+    C.hand.over();
+  };
+
+  T.flying = function () { return live; };
+  T.trail = function () { return trail.slice(); };
+  T.chapter = function () { return chapter; };
+
+  C.tour = T;
 
 })(window.C = (window.C || {}));
 
@@ -16754,10 +18739,10 @@
      Label two to four words, body one sentence under fifteen. Anything
      longer is a paragraph asking to be skipped. */
   var SCRIPT = [
-    { key: "desk", lead: "Start here",
-      text: "The reply you are drafting is in the Working Draft folder.",
-      at: function () { return C.q(".fnd-row.doc"); } },
-
+    /* The "Start here" step pointed at a row in the Finder. The arrival
+       does not open the Finder any more, so the line was describing a
+       window that is not on the screen and tracing a control that does
+       not exist. It is gone rather than reworded. */
     { key: "word", lead: "That flag is Caddy",
       text: "Far right of the ribbon, already installed.",
       at: function () { return C.q(".rb-big.caddy"); } },
@@ -16787,10 +18772,25 @@
 
   G.step = function (key) {
     if (seen[key]) return;
+    /* Not now is not the same as never. This used to mark the step seen
+       before show() had a chance to refuse it, so any step raised while
+       the guide was suppressed was lost for the rest of the session.
+       The arrival suppresses the guide for six seconds and raises two
+       steps in that window, which is what turned a latent bug into a
+       live one. */
+    if (!C.store.get("ui.guideOn")) return;
     seen[key] = true;
     for (var i = 0; i < SCRIPT.length; i++) {
       if (SCRIPT[i].key === key) { show(i); return; }
     }
+  };
+
+  /* The arrival performs some of these beats itself, with the product
+     rather than with a sentence. What has been shown has been shown, so
+     it retires those keys instead of letting them queue up and print
+     after the fact. */
+  G.markSeen = function () {
+    for (var i = 0; i < arguments.length; i++) seen[arguments[i]] = true;
   };
 
   G.start = function () { show(0); };
@@ -17062,12 +19062,33 @@
   S.toDesk = function () {
     C.store.set("scene", "desk");
     if (!C.wm.get("finder") && C.store.get("desk.finderOpen") !== false) C.desk.openFinder();
-    C.guide.step("desk");
   };
 
   S.toWord = function (docKey) {
     C.store.set("scene", "word");
     C.desk.launchWord(docKey);
+  };
+
+  /* ---- the arrival ---------------------------------------------------
+     The threshold used to hand off to the desk, and the first thing a
+     stranger saw after holing a putt was a file browser. That is the
+     least interesting room in this product. It lands in Word now, on a
+     real motion, with the pane about to open beside it.
+
+     The Finder is suppressed rather than merely skipped. Closing Word
+     later runs toDesk(), and a Finder springing up at that point would
+     be the demonstration arguing with itself about where the visitor
+     is. The Dock still opens it on demand, which is how a desk works.
+
+     C.word.open() loads the document and paginates it synchronously, so
+     by the time this returns the sheets are drawn and measured. That is
+     what lets the overlay hold a black frame over the assembly rather
+     than fading up on a half-built window.
+     -------------------------------------------------------------------- */
+  S.toWorkspace = function (docKey) {
+    C.store.set("scene", "word");
+    C.store.set("desk.finderOpen", false);
+    C.desk.launchWord(docKey || "reply-msj");
   };
 
   C.scene = S;
@@ -17096,13 +19117,24 @@
       }
     });
 
-    /* The pane's own hooks into the guide. */
-    C.store.on("pane.open", function (on) { if (on) C.guide.step("pane"); });
+    /* The pane's own hooks into the guide.
+
+       Each one is deaf while the arrival is flying. The welcome opens
+       the pane, resolves the case and visits both doors itself, behind
+       a fog, and a plate printed against that is a line nobody can read
+       about a thing they cannot see. Worse, the step would be burnt:
+       the guide shows every key exactly once. So the arrival does the
+       talking for the beats it performs, and these hooks pick up again
+       the first time the visitor moves on their own. */
+    function flying() { return !!(C.welcome && C.welcome.flying()); }
+
+    C.store.on("pane.open", function (on) { if (on && !flying()) C.guide.step("pane"); });
     C.store.on("pane.matter", function (m) {
-      if (!m) return;
+      if (!m || flying()) return;
       setTimeout(function () { C.guide.callout(); }, 260);
     });
     C.store.on("pane.view", function (v) {
+      if (flying()) return;
       if (v === "chooser" || v === "companion") C.guide.step("templates");
     });
 
