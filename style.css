@@ -234,6 +234,29 @@ a { color: var(--amber); }
     fill: none;
     pointer-events: none;
 }
+/* The shower, on the one canvas this effect is allowed to have.
+
+   Read the note above before touching this. A canvas is what caused the
+   two-rectangles bug, and the reason this one is safe is that it is a
+   CHILD OF THE CARD and sized by CSS from the card, exactly like the
+   kerf. Nothing in the script measures the viewport to place it.
+
+   Deliberately NO width, height, left or top here. A canvas is a
+   replaced element, so an `inset` with auto width silently falls back
+   to its intrinsic size and drops the second offset, which put the
+   whole shower a card-width to the right of the card. The script sets
+   the box and the bitmap together from its own PAD, which is the stretch
+   that lets molten metal fall clear of the bottom edge instead of being
+   clipped at it. One number, one place.
+
+   pointer-events: none, because this sheet of glass lies over the
+   card's own link and over the page around it. */
+.cut-sparks {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+}
+
 /* Strokes are set as presentation attributes by the script, one per
    layer, so there is no base stroke rule here to fight with them. These
    two exist only to answer hover, where CSS is supposed to win. */
@@ -601,6 +624,11 @@ h1.name .name-period {
 @media (prefers-reduced-motion: reduce) {
     .entry--cut { transition: none; }
     .cut-kerf, .cut-kerf .kerf-cold { transition: none; }
+    /* Truthfully: the canvas IS created and sized under reduced motion,
+       because the resting gold rectangle is built by the same function.
+       What never happens is a frame loop, so not one pixel is ever
+       painted into it. This rule is the belt to that pair of braces. */
+    .cut-sparks { display: none; }
 }
 
 

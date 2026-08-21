@@ -19,7 +19,7 @@
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="fonts/cormorant-garamond-m.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=73">
+    <link rel="stylesheet" href="style.css?v=74">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -68,6 +68,13 @@
                     <h2 class="entry-title">Caddy</h2>
                     <p class="entry-desc">Attorney tool making casefiles more accessible in Word during drafting. 100% secure, 0% data shared, 0% AI.</p>
                 </a>
+                <!-- The shower. A child of the card like the kerf, and
+                     stretched a constant 90px past it on every side so
+                     molten metal can fall clear of the bottom edge. That
+                     90 is a number, not a measurement of the viewport,
+                     which is the entire reason it is allowed to exist
+                     here at all. Painted only while the torch is lit. -->
+                <canvas class="cut-sparks" id="cut-sparks" aria-hidden="true"></canvas>
             </div>
         </section>
 
@@ -772,6 +779,7 @@
             if (L.band) paths[L.k].setAttribute("stroke-dasharray", "0 " + LEN);
           });
           if (headEl) headEl.setAttribute("opacity", "0");
+          wipe();
         }
         function stop() {
           burning = false;
@@ -825,7 +833,8 @@
            white front ends up on top. */
         var LAYERS = [
           { k: "cold", stroke: "rgba(201,168,92,0.28)", w: 1,    band: 0 },
-          { k: "b1",   stroke: "#581e10",               w: 1.5,  band: 190 },
+          { k: "b0",   stroke: "#2e0f06",               w: 1.7,  band: 520 },
+          { k: "b1",   stroke: "#581e10",               w: 1.55, band: 300 },
           { k: "b2",   stroke: "#9e4824",               w: 1.5,  band: 122 },
           { k: "b3",   stroke: "#c46636",               w: 1.45, band: 74 },
           { k: "b4",   stroke: "#e87c30",               w: 1.4,  band: 43 },
@@ -833,6 +842,206 @@
           { k: "b6",   stroke: "#ffe08a",               w: 1.15, band: 11 },
           { k: "b7",   stroke: "#fff7d6",               w: 1,    band: 4 }
         ];
+        /* ---- the shower ------------------------------------------ *
+
+           A cutting torch is not a line that appears. It is a point of
+           white light throwing a continuous shower of burning metal
+           backwards, and that shower is what tells you something is
+           being cut rather than drawn. There was none of it here.
+
+           The sparks live on a canvas that is a CHILD OF THE CARD,
+           stretched a constant PAD past it on every side so slag can
+           fall clear of the bottom edge. PAD is a number written twice,
+           once here and once in the stylesheet, and it is not a
+           measurement of anything. Read the long note above about the
+           two rectangles on the iPhone: there is still no bounding
+           rect, no scrollX, no innerWidth and no devicePixelRatio
+           arithmetic against the viewport anywhere in this block. The
+           emission point comes off headAt(), which reads the path
+           itself, so a spark cannot land anywhere the cut is not.
+
+           If a 2d context cannot be had, cv stays null, the SVG head
+           takes over, and the burn plays without sparks. */
+        var PAD = 140;                 /* how far past the card slag may fall */
+        var EDGE = 48;                 /* and the margin it dims out across */
+        var cv = null, cx = null, cdpr = 1, cW = 0, cH = 0;
+        var bits = [], BITS_MAX = 380, emit = 0, RATE = 500;
+        /* A device that cannot keep up gets a THINNER shower, never a
+           slower cut. This drifts down while frames are running long and
+           back up when they are not, so a phone that struggles for a
+           second is not punished for the rest of the burn. */
+        var thin = 1;
+        /* The incandescence ramp, hottest first. A spark is white at
+           birth and walks down this table as it cools, so there is no
+           per-frame colour arithmetic anywhere in the shower. */
+        var RAMP = ["#fffdf4", "#fff4cf", "#ffe193", "#ffb552", "#f2832d",
+                    "#d06025", "#a2461f", "#6d2a12"];
+
+        function canvasReady() {
+          if (!cv) return false;
+          var w = card.offsetWidth, h = card.offsetHeight;
+          if (!w || !h) return false;
+          cdpr = Math.min(devicePixelRatio || 1, 2);
+          cW = w + PAD * 2; cH = h + PAD * 2;
+          cv.width = Math.round(cW * cdpr);
+          cv.height = Math.round(cH * cdpr);
+          /* A canvas is a REPLACED element: with width:auto it takes its
+             intrinsic (attribute) size and ignores the second offset, so
+             `inset: -PAD` alone stretched nothing and put the shower a
+             card-width to the right. Both the box and the bitmap are set
+             from PAD here, so the number lives in one place and they
+             cannot disagree. */
+          cv.style.left = cv.style.top = (-PAD) + "px";
+          cv.style.width = cW + "px";
+          cv.style.height = cH + "px";
+          cx = cv.getContext("2d");
+          if (!cx) return false;
+          cx.setTransform(cdpr, 0, 0, cdpr, 0, 0);
+          cx.lineCap = "round";
+          return true;
+        }
+        function wipe() {
+          if (cx) { cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height); cx.setTransform(cdpr, 0, 0, cdpr, 0, 0); }
+          bits.length = 0; emit = 0;
+        }
+
+        /* Which way the torch is travelling, read off the path rather
+           than worked out from the rectangle, so a corner needs no
+           special case. */
+        function headDir(u) {
+          var e = 0.005;
+          var a = headAt(Math.max(0, u - e)), b = headAt(Math.min(1, u + e));
+          if (!a || !b) return { x: 1, y: 0 };
+          var dx = b.x - a.x, dy = b.y - a.y, m = Math.hypot(dx, dy);
+          if (!m) return { x: 1, y: 0 };
+          return { x: dx / m, y: dy / m };
+        }
+
+        /* One puff off the tip. The fan opens BACKWARDS from the
+           direction of travel, which is what molten metal does when it
+           is blown out of a kerf, and a few of them are slow heavy
+           gobs that fall further and bounce once off the bottom of the
+           cut. About one in twelve is charged: partway through its
+           life it bursts into three or four children, and that burst
+           is the single thing that separates a cutting torch from a
+           sparkler. */
+        function throwBits(x, y, dir, count, force) {
+          var cap = BITS_MAX * thin;
+          for (var i = 0; i < count; i++) {
+            if (bits.length >= cap) return;
+            var ang = Math.atan2(-dir.y, -dir.x) + rand(-1.2, 1.2);
+            var sp = (44 + Math.pow(Math.random(), 2.1) * 300) * (force || 1);
+            var heavy = Math.random() < 0.07;
+            if (heavy) sp *= 0.34;
+            bits.push({
+              x: x, y: y, px: x, py: y,
+              vx: Math.cos(ang) * sp,
+              vy: Math.sin(ang) * sp - rand(0, 62),
+              age: 0,
+              life: heavy ? rand(900, 1700) : rand(280, 1180),
+              w: heavy ? rand(1.5, 2.2) : rand(0.9, 1.6),
+              a: rand(0.55, 1),
+              heavy: heavy,
+              pop: Math.random() < 0.085 ? rand(0.38, 0.7) : 0
+            });
+          }
+        }
+        function burst(s) {
+          var kids = 2 + (Math.random() * 3 | 0);
+          for (var i = 0; i < kids; i++) {
+            if (bits.length >= BITS_MAX) return;
+            var a = rand(0, 6.284), sp = rand(30, 140);
+            bits.push({
+              x: s.x, y: s.y, px: s.x, py: s.y,
+              vx: s.vx * 0.25 + Math.cos(a) * sp,
+              vy: s.vy * 0.25 + Math.sin(a) * sp,
+              age: 0, life: rand(160, 420),
+              w: rand(0.8, 1.3), a: rand(0.6, 1),
+              heavy: false, pop: 0
+            });
+          }
+        }
+        function stepBits(dt) {
+          var g = 430 * dt / 1000, drag = Math.pow(0.985, dt / 16.7);
+          var floor = PAD + (card.offsetHeight || 0);
+          for (var i = bits.length - 1; i >= 0; i--) {
+            var s = bits[i];
+            s.age += dt;
+            if (s.age >= s.life) { bits.splice(i, 1); continue; }
+            s.px = s.x; s.py = s.y;
+            s.vy += g; s.vx *= drag; s.vy *= drag;
+            s.x += s.vx * dt / 1000;
+            s.y += s.vy * dt / 1000;
+            /* slag reaching the floor of the cut skitters along it once */
+            if (s.heavy && s.y > floor && s.vy > 0) {
+              s.y = floor; s.vy *= -0.35; s.vx *= 0.62; s.heavy = false;
+            }
+            if (s.pop && s.age / s.life > s.pop) { s.pop = 0; burst(s); }
+          }
+        }
+        function bloom(x, y, r, stops, a) {
+          if (a <= 0 || r <= 0) return;
+          var g = cx.createRadialGradient(x, y, 0, x, y, r);
+          for (var i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+          cx.globalAlpha = a;
+          cx.fillStyle = g;
+          cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.fill();
+        }
+        /* The flame itself: a wash the size of a hand that lights the
+           page around the kerf (this is the light coming through from
+           the other side), then bloom, corona, a cone leaning into the
+           direction of travel, and a white core. Flicker is two sines
+           beating against each other so it never repeats on a count. */
+        function torch(x, y, dir, op, now) {
+          var f = 0.80 + 0.20 * (0.5 + 0.5 * Math.sin(now * 0.029) * Math.sin(now * 0.0161 + 2.1));
+          bloom(x, y, 76 * f, [[0, "rgba(255,168,78,0.15)"], [0.45, "rgba(214,104,44,0.055)"],
+                               [1, "rgba(170,66,28,0)"]], op);
+          bloom(x, y, 33 * f, [[0, "rgba(255,196,96,0.30)"], [0.42, "rgba(232,124,48,0.13)"],
+                               [1, "rgba(180,70,30,0)"]], op);
+          cx.save();
+          cx.translate(x, y);
+          cx.rotate(Math.atan2(dir.y, dir.x));
+          cx.scale(2.3, 0.72);
+          bloom(3.5, 0, 13 * f, [[0, "rgba(255,238,180,0.55)"], [0.5, "rgba(255,164,64,0.22)"],
+                                 [1, "rgba(226,104,40,0)"]], op);
+          cx.restore();
+          bloom(x, y, 13.5 * f, [[0, "rgba(255,236,168,0.62)"], [0.5, "rgba(255,176,72,0.26)"],
+                                 [1, "rgba(230,110,45,0)"]], op);
+          bloom(x, y, 3.6 * f, [[0, "rgba(255,255,252,0.98)"], [0.55, "rgba(255,244,206,0.55)"],
+                                [1, "rgba(255,204,124,0)"]], op);
+        }
+        /* Everything on this canvas is drawn in lighter, so heat piles
+           up where the sparks are dense instead of one opaque dot
+           painting over another. */
+        function paint(now, dt) {
+          if (!cx) return;
+          cx.setTransform(1, 0, 0, 1, 0, 0);
+          cx.clearRect(0, 0, cv.width, cv.height);
+          cx.setTransform(cdpr, 0, 0, cdpr, 0, 0);
+          cx.globalCompositeOperation = "lighter";
+          var p = headAt(prog), d = headDir(prog);
+          if (p && headOp > 0.01) torch(p.x + PAD, p.y + PAD, d, headOp, now);
+          for (var i = 0; i < bits.length; i++) {
+            var s = bits[i], k = s.age / s.life;
+            var ex = s.x + PAD, ey = s.y + PAD;
+            /* Dim across the last EDGE pixels of the canvas. A spark that
+               simply stopped at the boundary read as a hard cut line
+               under the card, which is the one thing a shower must not
+               do. Now they go out as they leave. */
+            var e = Math.min(ex, ey, cW - ex, cH - ey);
+            if (e <= 0) continue;
+            cx.strokeStyle = RAMP[Math.min(RAMP.length - 1, (k * RAMP.length) | 0)];
+            cx.globalAlpha = s.a * Math.min(1, 2.8 * (1 - k)) * Math.min(1, e / EDGE);
+            cx.lineWidth = s.w;
+            cx.beginPath();
+            cx.moveTo(s.px + PAD, s.py + PAD);
+            cx.lineTo(ex, ey);
+            cx.stroke();
+          }
+          cx.globalAlpha = 1;
+          cx.globalCompositeOperation = "source-over";
+        }
+
         function build() {
           var w = card.offsetWidth, h = card.offsetHeight;
           if (!w || !h) return;
@@ -875,11 +1084,17 @@
             paths[L.k] = p;
           });
 
+          /* The SVG head is the fallback torch, and nothing more. It
+             is what burns if a 2d context cannot be had; where one can,
+             the canvas draws a far better flame and this stays at zero. */
           headEl = document.createElementNS(SVGNS, "circle");
           headEl.setAttribute("r", "13");
           headEl.setAttribute("fill", "url(#cut-head)");
           headEl.setAttribute("opacity", "0");
           kerf.appendChild(headEl);
+
+          cv = document.getElementById("cut-sparks");
+          if (cv && !canvasReady()) { cv = null; cx = null; }
         }
         addEventListener("resize", function () {
           if (opened) { build(); rest(); }
@@ -941,6 +1156,22 @@
         function tremor(t) {
           return 0.4 * Math.sin(t * 0.059) + 0.2 * Math.sin(t * 0.0748 + 1.7);
         }
+        /* Striking the torch. The arrival used to be a plain fade-up of
+           one dot, which is how a lamp comes on and not how a flame
+           catches. Three sputters, each a spike of light and a fistful
+           of sparks off the striker, and only then does it settle into
+           a steady flame and start moving. */
+        var STRIKES = [130, 445, 780], strikeAt = 0;
+        function strikeCurve(t) {
+          var v = Math.pow(Math.min(1, t / ARRIVE_MS), 2.4) * 0.5;
+          for (var i = 0; i < STRIKES.length; i++) {
+            var d = t - STRIKES[i];
+            if (d > -46 && d < 190) v = Math.max(v, 0.94 * Math.exp(-Math.abs(d) / 44));
+          }
+          var settle = (t - ARRIVE_MS * 0.74) / (ARRIVE_MS * 0.26);
+          if (settle > 0) v = Math.max(v, Math.min(1, settle));
+          return Math.max(0, Math.min(1, v));
+        }
 
         /* ---- paint ---------------------------------------------- */
         var headOp = 0;
@@ -974,7 +1205,7 @@
             var tr = tremor(performance.now());
             headEl.setAttribute("cx", (pt2.x + tr).toFixed(2));
             headEl.setAttribute("cy", (pt2.y + tr * 0.6).toFixed(2));
-            headEl.setAttribute("opacity", headOp.toFixed(3));
+            headEl.setAttribute("opacity", (cx ? 0 : headOp).toFixed(3));
           }
         }
 
@@ -997,10 +1228,14 @@
           pt += dt;
 
           if (phase === "arrive") {
-            /* the torch appears where the cut starts, and starts */
-            headOp = pt / ARRIVE_MS;
-            if (headOp > 1) headOp = 1;
+            /* the torch is struck where the cut will start */
+            headOp = strikeCurve(pt);
             prog = 0;
+            while (strikeAt < STRIKES.length && pt >= STRIKES[strikeAt]) {
+              var sp0 = headAt(0);
+              if (sp0 && cx) throwBits(sp0.x, sp0.y, headDir(0), 12 + strikeAt * 7, 1.35);
+              strikeAt++;
+            }
             if (pt >= ARRIVE_MS) {
               phase = "burn"; pt = 0;
               cut.classList.add("is-cutting");
@@ -1009,6 +1244,19 @@
             headOp = 1;
             prog += (dt / BURN_MS) * pace(prog);
             if (prog >= 1) { prog = 1; phase = "fade"; pt = 0; }
+            /* Emission is metered per second, not per frame, so the
+               shower is the same density on a 120Hz display as on a
+               30Hz one, and a backgrounded tab throws nothing. */
+            if (cx && !document.hidden) {
+              thin = Math.max(0.3, Math.min(1, thin + (dt > 30 ? -0.05 : 0.02)));
+              emit += dt * RATE * thin / 1000;
+              var many = emit | 0;
+              if (many) {
+                emit -= many;
+                var bp = headAt(prog);
+                if (bp) throwBits(bp.x, bp.y, headDir(prog), many, 1);
+              }
+            }
           } else if (phase === "fade") {
             prog = 1;
             headOp = Math.max(0, 1 - pt / FADE_MS);
@@ -1018,9 +1266,15 @@
               paths[L.k].setAttribute("stroke-opacity", headOp.toFixed(3));
             });
             if (pt > FADE_MS * 0.7 && !opened) open();
-            if (pt > FADE_MS + 200) { stop(); return; }
+            /* The card opens on the schedule it always did. The last
+               sparks are allowed to finish falling after it, under a
+               hard ceiling so this can never be the thing that keeps a
+               frame loop alive. */
+            if (pt > FADE_MS + 200 && !bits.length) { stop(); return; }
+            if (pt > FADE_MS + 2400) { stop(); return; }
           }
           apply();
+          if (cx) { stepBits(dt); paint(ts, dt); }
         }
 
         /* A backgrounded tab stops firing frames, and coming back with
@@ -1038,6 +1292,7 @@
           build();
           if (!paths) return;
           burning = true; phase = "arrive"; pt = 0; last = 0; prog = 0;
+          strikeAt = 0; emit = 0; thin = 1; bits.length = 0;
           startedAt = performance.now();
           raf = requestAnimationFrame(frame);
         }
