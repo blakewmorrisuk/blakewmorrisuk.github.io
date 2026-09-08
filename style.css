@@ -60,6 +60,8 @@ a { color: var(--amber); }
 .page--index {
     position: relative;
     z-index: 1;
+    /* Sparks can leave the card, but cannot widen the phone viewport. */
+    overflow-x: clip;
 }
 
 /* Index layout: entry hangs off a gold hairline, no card box */
@@ -167,6 +169,7 @@ a { color: var(--amber); }
     hyphens: auto;
     -webkit-hyphens: auto;
 }
+.caddy-email { white-space: nowrap; }
 /* Above phone widths the card is a fixed 445px, so the wrap is
    deterministic: the copy fills exactly four lines and the last one is
    ~92% full. Justifying it too closes the block into a clean rectangle.
@@ -630,5 +633,3 @@ h1.name .name-period {
        painted into it. This rule is the belt to that pair of braces. */
     .cut-sparks { display: none; }
 }
-
-

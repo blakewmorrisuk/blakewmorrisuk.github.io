@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Blake Morris</title>
-    <meta name="description" content="Projects by Blake Morris. A wartime family archive, and a drafting tool built for law firms.">
+    <meta name="description" content="Projects by Blake Morris. A wartime family archive, and a Mac app that organizes school and work assignments.">
     <meta name="theme-color" content="#0a0a0b">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Blake Morris">
-    <meta property="og:description" content="Projects by Blake Morris. A wartime family archive, and a drafting tool built for law firms.">
+    <meta property="og:description" content="Projects by Blake Morris. A wartime family archive, and a Mac app that organizes school and work assignments.">
     <meta property="og:url" content="https://blakewmorrisuk.github.io/">
     <meta property="og:image" content="https://blakewmorrisuk.github.io/og-image.png">
     <meta property="og:image:width" content="1200">
@@ -19,7 +19,7 @@
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="fonts/cormorant-garamond-m.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=74">
+    <link rel="stylesheet" href="style.css?v=75">
 </head>
 <body>
     <canvas id="etch" aria-hidden="true"></canvas>
@@ -66,7 +66,7 @@
                 <a class="entry entry--cut" id="entry-caddy" href="https://caddydocs.com/">
                     <span class="entry-no">N° 02</span>
                     <h2 class="entry-title">Caddy</h2>
-                    <p class="entry-desc">Attorney tool making casefiles more accessible in Word during drafting. 100% secure, 0% data shared, 0% AI.</p>
+                    <p class="entry-desc">Caddy Docs (&ldquo;Caddy&rdquo;) is a macOS application that organizes your school and work assignments into colorful tabs, called Caddies, which live on the edges of your screen. Caddy is available on the Apple App Store for Mac and recently was #31 in the world for paid productivity apps. After I am finished, it will be #1 among free apps, with an option to buy a subscription. If Caddy is still a paid app when you read this and you cannot afford it, email <span class="caddy-email">blake@caddydocs.com</span> and I will provide you with a free copy.</p>
                 </a>
                 <!-- The shower. A child of the card like the kerf, and
                      stretched a constant 90px past it on every side so
@@ -709,8 +709,8 @@
       /* ---- N° 02: the plate is cut, not drawn --------------------- *
 
          WHAT HAPPENS. The torch appears at the top-left corner of the
-         card, burns a rectangle, slowly and all the way round in one
-         continuous line, and goes out. What was behind the plate is
+         card, cuts across, down, across the bottom, then up from a
+         crouch. Uneven passes and rests leave one closed seam. What was behind the plate is
          the card. What is left is a gold hairline like every other
          line on this page.
 
@@ -763,6 +763,8 @@
         var phase = "wait", pt = 0, last = 0, frames = 0;
         var armed = false, seen = false, startedAt = 0;
         var paths = null, headEl = null, total = 0, prog = 0;
+        var corners = [0, 0.25, 0.5, 0.75, 1], passes = [], passAt = 0;
+        var passProgress = 0, trailStart = 0, heat = 1;
 
         /* ---- the one thing that cannot fail --------------------- */
         function open() {
@@ -1045,10 +1047,40 @@
         function build() {
           var w = card.offsetWidth, h = card.offsetHeight;
           if (!w || !h) return;
-          total = 2 * (w + h);
           kerf.setAttribute("viewBox", "0 0 " + w + " " + h);
-          /* half-pixel inset so a 1px stroke lands on whole pixels */
-          var d = "M0.5 0.5 H" + (w - 0.5) + " V" + (h - 0.5) + " H0.5 Z";
+          /* A restrained hand-cut edge. Every layer and the flame use
+             this same path, including after a resize. Ends meet exactly;
+             between them the hand wanders by about a pixel. */
+          var vertices = [[0.5, 0.5], [w - 0.5, 0.5],
+                          [w - 0.5, h - 0.5], [0.5, h - 0.5], [0.5, 0.5]];
+          var d = "M0.5 0.5", lengths = [0], distance = 0;
+          for (var side = 0; side < 4; side++) {
+            var a = vertices[side], b = vertices[side + 1];
+            var dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx, dy);
+            var steps = Math.max(1, Math.ceil(length / 7)), prev = a;
+            for (var j = 1; j <= steps; j++) {
+              var u = j / steps, along = u * length;
+              var drift = Math.sin(Math.PI * u) *
+                (0.85 * Math.sin(along * 0.075 + side * 2.1) +
+                 0.38 * Math.sin(along * 0.21 + side));
+              var x = a[0] + dx * u - dy / length * drift;
+              var y = a[1] + dy * u + dx / length * drift;
+              x = Number(x.toFixed(3)); y = Number(y.toFixed(3));
+              distance += Math.hypot(x - prev[0], y - prev[1]);
+              d += " L" + x + " " + y;
+              prev = [x, y];
+            }
+            lengths.push(distance);
+          }
+          d += " Z";
+          total = distance;
+          corners = lengths.map(function (v) { return v / total; });
+          planPasses();
+          if (phase === "burn" || phase === "pause") {
+            var active = passes[passAt];
+            prog = active.from + (active.to - active.from) * passProgress;
+            trailStart = active.from;
+          }
           kerf.textContent = "";
           var defs = document.createElementNS(SVGNS, "defs");
           var g = document.createElementNS(SVGNS, "radialGradient");
@@ -1130,28 +1162,27 @@
           return p.getPointAtLength(Math.max(0, Math.min(1, u)) * L);
         }
 
-        /* ---- pacing --------------------------------------------- *
-           Constant speed, so a long side takes proportionally longer
-           than a short one, with a ramp off each corner and a longer
-           one into the next, because people and machines both brake
-           earlier than they launch. Fourteen seconds for the whole
-           perimeter. */
-        var BURN_MS = 14000, ARRIVE_MS = 1400, FADE_MS = 900;
-        /* pace() slows near each corner, so the burn actually takes a
-           little longer than BURN_MS. That is wanted, not a drift. */
-        function pace(u) {
-          /* u is progress round the whole rectangle. The corners sit
-             at the four side boundaries, so slow near each of them. */
-          var w = card.offsetWidth || 1, h = card.offsetHeight || 1;
-          var cuts = [0, w, w + h, 2 * w + h, 2 * (w + h)].map(function (v) {
-            return v / (2 * (w + h));
-          });
-          var slow = 1;
-          for (var i = 1; i < cuts.length - 1; i++) {
-            var d = Math.abs(u - cuts[i]);
-            if (d < 0.035) slow = Math.min(slow, 0.34 + 0.66 * (d / 0.035));
-          }
-          return slow;
+        /* Each pass has its own pace and a real torch-off rest. The
+           long rest at the lower left reads as crouching down before
+           cutting upward. Small stalls within a pass suggest resistance. */
+        var ARRIVE_MS = 1400, FADE_MS = 900;
+        function planPasses() {
+          var top = corners[1], right = corners[2], bottom = corners[3];
+          passes = [
+            { from: 0, to: top * 0.19, ms: 1250, pause: 300 },
+            { from: top * 0.19, to: top, ms: 3100, pause: 850 },
+            { from: top, to: top + (right - top) * 0.63, ms: 1850, pause: 380 },
+            { from: top + (right - top) * 0.63, to: right, ms: 1400, pause: 650 },
+            { from: right, to: bottom, ms: 2900, pause: 1350 },
+            { from: bottom, to: 1, ms: 3300, pause: 0 }
+          ];
+        }
+        function pace(u, t) {
+          var ramp = 0.48 + 0.52 * Math.min(1, u / 0.10, (1 - u) / 0.13);
+          var hand = 1 + 0.27 * Math.sin(t * 0.0041 + passAt * 1.9) +
+                         0.14 * Math.sin(t * 0.0107 + passAt);
+          var hesitation = 1 - 0.67 * Math.exp(-Math.pow((u - 0.58) / 0.045, 2));
+          return ramp * hand * hesitation;
         }
         function tremor(t) {
           return 0.4 * Math.sin(t * 0.059) + 0.2 * Math.sin(t * 0.0748 + 1.7);
@@ -1195,10 +1226,11 @@
              AHEAD of the torch instead of behind it. */
           LAYERS.forEach(function (L) {
             if (!L.band) return;
-            var band = Math.min(L.band, LEN * prog);
+            var band = Math.min(L.band, LEN * (prog - trailStart));
             var p = paths[L.k];
             p.setAttribute("stroke-dasharray", band + " " + LEN);
             p.setAttribute("stroke-dashoffset", String(2 * band + LEN * (1 - prog)));
+            p.setAttribute("stroke-opacity", heat.toFixed(3));
           });
           var pt2 = headAt(prog);
           if (pt2 && headEl) {
@@ -1241,9 +1273,15 @@
               cut.classList.add("is-cutting");
             }
           } else if (phase === "burn") {
-            headOp = 1;
-            prog += (dt / BURN_MS) * pace(prog);
-            if (prog >= 1) { prog = 1; phase = "fade"; pt = 0; }
+            var pass = passes[passAt];
+            headOp = Math.min(1, 0.25 + pt / 180);
+            heat = headOp;
+            passProgress = Math.min(1, passProgress + (dt / pass.ms) * pace(passProgress, pt));
+            prog = pass.from + (pass.to - pass.from) * passProgress;
+            if (passProgress >= 1) {
+              phase = passAt === passes.length - 1 ? "fade" : "pause";
+              pt = 0;
+            }
             /* Emission is metered per second, not per frame, so the
                shower is the same density on a 120Hz display as on a
                30Hz one, and a backgrounded tab throws nothing. */
@@ -1257,14 +1295,19 @@
                 if (bp) throwBits(bp.x, bp.y, headDir(prog), many, 1);
               }
             }
+          } else if (phase === "pause") {
+            headOp = Math.max(0, 1 - pt / 110);
+            heat = Math.max(0, 1 - pt / 420);
+            if (pt >= passes[passAt].pause) {
+              passAt++; passProgress = 0;
+              trailStart = passes[passAt].from;
+              phase = "burn"; pt = 0; emit = 0;
+            }
           } else if (phase === "fade") {
             prog = 1;
             headOp = Math.max(0, 1 - pt / FADE_MS);
             /* the hot bands go out with it */
-            LAYERS.forEach(function (L) {
-              if (!L.band) return;
-              paths[L.k].setAttribute("stroke-opacity", headOp.toFixed(3));
-            });
+            heat = headOp;
             if (pt > FADE_MS * 0.7 && !opened) open();
             /* The card opens on the schedule it always did. The last
                sparks are allowed to finish falling after it, under a
@@ -1292,6 +1335,7 @@
           build();
           if (!paths) return;
           burning = true; phase = "arrive"; pt = 0; last = 0; prog = 0;
+          passAt = 0; passProgress = 0; trailStart = 0; heat = 1;
           strikeAt = 0; emit = 0; thin = 1; bits.length = 0;
           startedAt = performance.now();
           raf = requestAnimationFrame(frame);
