@@ -66,7 +66,7 @@
                 <a class="entry entry--cut" id="entry-caddy" href="https://caddydocs.com/">
                     <span class="entry-no">N° 02</span>
                     <h2 class="entry-title">Caddy</h2>
-                    <p class="entry-desc">Caddy Docs (&ldquo;Caddy&rdquo;) is a macOS application that organizes your school and work assignments into colorful tabs, called Caddies, which live on the edges of your screen. Caddy is available on the Apple App Store for Mac and recently was #31 in the world for paid productivity apps. After I am finished, it will be #1 among free apps, with an option to buy a subscription. If Caddy is still a paid app when you read this and you cannot afford it, email <span class="caddy-email">blake@caddydocs.com</span> and I will provide you with a free copy.</p>
+                    <p class="entry-desc">Available now on the Mac App Store.</p>
                 </a>
                 <!-- The shower. A child of the card like the kerf, and
                      stretched a constant 90px past it on every side so
@@ -1142,17 +1142,15 @@
           return p.getPointAtLength(Math.max(0, Math.min(1, u)) * L);
         }
 
-        /* Each pass has its own pace and a real torch-off rest. The
+        /* Each full side has its own pace and a torch-off rest at the corner. The
            long rest at the lower left reads as crouching down before
            cutting upward. Small stalls within a pass suggest resistance. */
         var ARRIVE_MS = 1400, FADE_MS = 900;
         function planPasses() {
           var top = corners[1], right = corners[2], bottom = corners[3];
           passes = [
-            { from: 0, to: top * 0.19, ms: 1250, pause: 300 },
-            { from: top * 0.19, to: top, ms: 3100, pause: 850 },
-            { from: top, to: top + (right - top) * 0.63, ms: 1850, pause: 380 },
-            { from: top + (right - top) * 0.63, to: right, ms: 1400, pause: 650 },
+            { from: 0, to: top, ms: 4350, pause: 850 },
+            { from: top, to: right, ms: 3250, pause: 650 },
             { from: right, to: bottom, ms: 2900, pause: 1350 },
             { from: bottom, to: 1, ms: 3300, pause: 0 }
           ];
@@ -1250,7 +1248,7 @@
             }
           } else if (phase === "burn") {
             var pass = passes[passAt];
-            headOp = Math.min(1, 0.25 + pt / 180);
+            headOp = passAt === 0 ? 1 : Math.min(1, 0.25 + pt / 180);
             heat = headOp;
             passProgress = Math.min(1, passProgress + (dt / pass.ms) * pace(passProgress, pt));
             prog = pass.from + (pass.to - pass.from) * passProgress;
