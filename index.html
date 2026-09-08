@@ -1048,33 +1048,13 @@
           var w = card.offsetWidth, h = card.offsetHeight;
           if (!w || !h) return;
           kerf.setAttribute("viewBox", "0 0 " + w + " " + h);
-          /* A restrained hand-cut edge. Every layer and the flame use
-             this same path, including after a resize. Ends meet exactly;
-             between them the hand wanders by about a pixel. */
-          var vertices = [[0.5, 0.5], [w - 0.5, 0.5],
-                          [w - 0.5, h - 0.5], [0.5, h - 0.5], [0.5, 0.5]];
-          var d = "M0.5 0.5", lengths = [0], distance = 0;
-          for (var side = 0; side < 4; side++) {
-            var a = vertices[side], b = vertices[side + 1];
-            var dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx, dy);
-            var steps = Math.max(1, Math.ceil(length / 7)), prev = a;
-            for (var j = 1; j <= steps; j++) {
-              var u = j / steps, along = u * length;
-              var drift = Math.sin(Math.PI * u) *
-                (0.85 * Math.sin(along * 0.075 + side * 2.1) +
-                 0.38 * Math.sin(along * 0.21 + side));
-              var x = a[0] + dx * u - dy / length * drift;
-              var y = a[1] + dy * u + dx / length * drift;
-              x = Number(x.toFixed(3)); y = Number(y.toFixed(3));
-              distance += Math.hypot(x - prev[0], y - prev[1]);
-              d += " L" + x + " " + y;
-              prev = [x, y];
-            }
-            lengths.push(distance);
-          }
-          d += " Z";
-          total = distance;
-          corners = lengths.map(function (v) { return v / total; });
+          /* Perfectly straight sides and square corners. Only the
+             cutting speed varies. Every layer and flame shares this path. */
+          var d = "M0.5 0.5 H" + (w - 0.5) + " V" + (h - 0.5) + " H0.5 Z";
+          var horizontal = w - 1, vertical = h - 1;
+          total = 2 * (horizontal + vertical);
+          corners = [0, horizontal, horizontal + vertical,
+                     2 * horizontal + vertical, total].map(function (v) { return v / total; });
           planPasses();
           if (phase === "burn" || phase === "pause") {
             var active = passes[passAt];
@@ -1184,9 +1164,6 @@
           var hesitation = 1 - 0.67 * Math.exp(-Math.pow((u - 0.58) / 0.045, 2));
           return ramp * hand * hesitation;
         }
-        function tremor(t) {
-          return 0.4 * Math.sin(t * 0.059) + 0.2 * Math.sin(t * 0.0748 + 1.7);
-        }
         /* Striking the torch. The arrival used to be a plain fade-up of
            one dot, which is how a lamp comes on and not how a flame
            catches. Three sputters, each a spike of light and a fistful
@@ -1234,9 +1211,8 @@
           });
           var pt2 = headAt(prog);
           if (pt2 && headEl) {
-            var tr = tremor(performance.now());
-            headEl.setAttribute("cx", (pt2.x + tr).toFixed(2));
-            headEl.setAttribute("cy", (pt2.y + tr * 0.6).toFixed(2));
+            headEl.setAttribute("cx", pt2.x.toFixed(2));
+            headEl.setAttribute("cy", pt2.y.toFixed(2));
             headEl.setAttribute("opacity", (cx ? 0 : headOp).toFixed(3));
           }
         }
