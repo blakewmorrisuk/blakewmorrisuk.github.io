@@ -633,9 +633,3 @@ h1.name .name-period {
        painted into it. This rule is the belt to that pair of braces. */
     .cut-sparks { display: none; }
 }
-
-/* N° 03 hangs off its own hairline below the cut, the same way N° 01
-   does above it. Its copy wraps however it wraps, so the last line is
-   left natural instead of justified. */
-.entry--work { margin-top: 44px; }
-.entry--work .entry-desc { text-align-last: auto; }
